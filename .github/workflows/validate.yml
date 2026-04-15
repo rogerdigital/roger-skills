@@ -1,0 +1,73 @@
+name: Validate Skills
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate SKILL.md files
+        run: |
+          python3 - <<'EOF'
+          import sys
+          import re
+          from pathlib import Path
+
+          errors = []
+
+          skill_files = list(Path("skills").glob("*/SKILL.md"))
+          if not skill_files:
+              print("No SKILL.md files found.")
+              sys.exit(0)
+
+          for path in sorted(skill_files):
+              content = path.read_text(encoding="utf-8")
+
+              # Must start with frontmatter
+              if not content.startswith("---"):
+                  errors.append(f"{path}: missing frontmatter (must start with ---)")
+                  continue
+
+              # Extract frontmatter block
+              match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
+              if not match:
+                  errors.append(f"{path}: frontmatter block not closed with ---")
+                  continue
+
+              fm_text = match.group(1)
+
+              # Validate frontmatter is parseable YAML
+              try:
+                  import yaml
+                  fm = yaml.safe_load(fm_text)
+              except Exception as e:
+                  errors.append(f"{path}: invalid YAML in frontmatter — {e}")
+                  continue
+
+              if not isinstance(fm, dict):
+                  errors.append(f"{path}: frontmatter must be a YAML mapping")
+                  continue
+
+              # Required field
+              if not fm.get("description"):
+                  errors.append(f"{path}: missing required field 'description'")
+
+              # Body must exist after frontmatter
+              body = content[match.end():].strip()
+              if not body:
+                  errors.append(f"{path}: skill body is empty")
+
+          if errors:
+              print("Validation failed:\n")
+              for e in errors:
+                  print(f"  ✗ {e}")
+              sys.exit(1)
+          else:
+              print(f"✓ All {len(skill_files)} SKILL.md file(s) valid.")
+          EOF
