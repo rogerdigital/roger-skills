@@ -2,7 +2,7 @@
 name: pr-review
 description: Review a pull request thoroughly — code quality, logic, security, test coverage, and style. Triggers on "review PR", "review pull request", "review this PR", "code review", "/pr-review [PR number or URL]".
 argument-hint: "[PR number or URL]"
-allowed-tools: Bash(gh pr *) Bash(git diff *) Bash(git log *)
+allowed-tools: Bash(gh pr *) Bash(git diff *) Bash(git log *) Bash(gh pr comment *) Bash(gh pr review *)
 ---
 
 Perform a thorough code review of the pull request: `$ARGUMENTS`
@@ -16,11 +16,17 @@ gh pr diff $ARGUMENTS
 ```
 If `$ARGUMENTS` is empty, use the current branch's open PR.
 
-### 2. Understand intent
+### 2. Check CI status
+```bash
+gh pr checks $ARGUMENTS
+```
+Report any failing or pending checks. If CI is failing, prioritize identifying the cause before reviewing code changes.
+
+### 3. Understand intent
 - Read the PR title, description, and linked issues.
 - Identify what problem is being solved and the expected behavior change.
 
-### 3. Review the diff across these dimensions
+### 4. Review the diff across these dimensions
 
 #### Correctness
 - Does the logic achieve what the description claims?
@@ -52,7 +58,15 @@ If `$ARGUMENTS` is empty, use the current branch's open PR.
 - Does this change any public API, DB schema, or config format?
 - Is backward compatibility handled?
 
-### 4. Output format
+### 5. Large PR handling
+
+If the diff exceeds 500 lines, adjust the review strategy:
+- Focus on **Must Fix** items that affect correctness, security, or data integrity.
+- Skip nitpicks entirely — they add noise without proportional value in large reviews.
+- For Suggestions, limit to the most impactful improvements (max 5).
+- Call out areas you didn't review in depth and flag them for the author.
+
+### 6. Output format
 
 Structure the review as:
 

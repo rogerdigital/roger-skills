@@ -2,7 +2,7 @@
 name: commit
 description: Stage all changes and create a well-structured git commit. Analyzes the diff, writes a conventional commit message, and commits. Triggers on "commit my changes", "git commit", "make a commit", "save my work".
 argument-hint: "[optional message hint]"
-allowed-tools: Bash(git add *) Bash(git commit *) Bash(git diff *) Bash(git status *)
+allowed-tools: Bash(git add *) Bash(git commit *) Bash(git diff *) Bash(git status *) Bash(git log *)
 ---
 
 Create a git commit for the current changes. Follow this process:
@@ -16,20 +16,34 @@ Create a git commit for the current changes. Follow this process:
    git diff
    ```
 
-2. **Stage changes** — if nothing is staged, stage all tracked modifications:
+2. **Check recent commit style**
+   ```
+   git log --oneline -5
+   ```
+   Use the existing commit conventions (message format, scope patterns, language) as a guide for the new commit message.
+
+3. **Check for sensitive files** — before staging, inspect the diff for files that should not be committed:
+   - `.env`, `.env.*`
+   - Files with `cred` or `secret` in the name
+   - `*.key`, `*.pem`
+   - Any file with `password` or `token` in its name
+
+   If any such files are found, **stop and warn the user**. Do not stage or commit these files unless the user explicitly confirms.
+
+4. **Stage changes** — if nothing is staged, stage all tracked modifications:
    ```
    git add -u
    ```
    If there are new untracked files clearly related to the task, stage them too.
 
-3. **Write the commit message** using [Conventional Commits](https://www.conventionalcommits.org/):
+5. **Write the commit message** using [Conventional Commits](https://www.conventionalcommits.org/):
    - Format: `<type>(<scope>): <summary>`
    - Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `style`
    - Summary: imperative mood, ≤72 chars, no trailing period
    - Add a body if the change is non-obvious (what + why, not how)
    - Reference issues/PRs when applicable: `Closes #123`
 
-4. **Commit**:
+6. **Commit**:
    ```
    git commit -m "$(cat <<'EOF'
    <message here>

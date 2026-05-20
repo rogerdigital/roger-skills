@@ -2,6 +2,7 @@
 name: refactor
 description: Refactor a specific file or function for clarity, maintainability, and simplicity — without changing behavior. Triggers on "refactor this", "clean up this code", "simplify this function", "make this more readable".
 argument-hint: "[file path or function name]"
+allowed-tools: Read Edit Write Bash(*test*) Bash(*spec*) Bash(npm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *)
 ---
 
 Refactor `$ARGUMENTS` to improve code quality without changing external behavior.
@@ -24,7 +25,9 @@ Read the target code fully. Identify:
 
 ### 2. Run existing tests
 
-Confirm tests pass before you change anything. If there are no tests, note that — the refactor risk is higher.
+Confirm tests pass before you change anything. If there are no tests:
+- **Recommended:** Write characterization tests first to lock down existing behavior before refactoring.
+- **If writing tests isn't feasible:** Explicitly mark the refactor as high-risk. Proceed with extra caution — make smaller changes, verify manually after each step, and document what you verified.
 
 ### 3. Identify refactoring opportunities (pick relevant ones)
 
@@ -68,3 +71,7 @@ Make one logical change at a time. After each change, verify tests still pass if
 ```
 
 If you found larger structural issues outside the scope of this refactor, mention them as follow-up suggestions — don't fix them in this task.
+
+## Performance-sensitive code
+
+If the target code is in a hot path (tight loop, request handler, render function, data processing pipeline), benchmark before and after the refactor. A refactor that is correct but slower is not an improvement. If you can't benchmark, flag the performance risk explicitly.

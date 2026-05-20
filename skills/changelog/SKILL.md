@@ -2,7 +2,7 @@
 name: changelog
 description: Generate a CHANGELOG entry for recent changes since the last release or tag. Groups commits by type, filters noise, and formats as Keep a Changelog markdown. Triggers on "generate changelog", "write changelog", "update CHANGELOG", "what changed since last release".
 argument-hint: "[since-tag or commit range, e.g. v1.2.0 or v1.2.0..HEAD]"
-allowed-tools: Bash(git log *) Bash(git tag *) Bash(git diff *)
+allowed-tools: Bash(git log *) Bash(git tag *) Bash(git diff *) Read Write Edit
 ---
 
 Generate a CHANGELOG entry for the changes in: `$ARGUMENTS`
@@ -57,7 +57,16 @@ Group commits using [Keep a Changelog](https://keepachangelog.com/) categories:
 - Version bumps
 - Minor refactors with no behavior change
 
-### 4. Write the entry
+### 4. Check for existing entries (idempotency)
+
+Before writing, read the existing `CHANGELOG.md` and check whether entries for the same commit range already exist. Look for:
+- Duplicate commit references (PR numbers, commit hashes)
+- Overlapping date ranges or version headers
+- Identical descriptions
+
+If the entry already exists, report what's already covered and only add genuinely new entries. Do not duplicate existing content.
+
+### 5. Write the entry
 
 Format:
 
@@ -80,7 +89,7 @@ Rules:
 - Include PR or commit reference at the end of each line.
 - If a change is breaking, prepend **BREAKING:** in bold.
 
-### 5. Update CHANGELOG.md
+### 6. Update CHANGELOG.md
 
 If a `CHANGELOG.md` already exists, insert the new section below the `# Changelog` header (or at the top if no header). Do not overwrite existing entries.
 
