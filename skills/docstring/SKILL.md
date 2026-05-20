@@ -2,6 +2,7 @@
 name: docstring
 description: Add or improve docstrings and inline comments for functions, classes, and modules. Follows language-specific conventions. Triggers on "add docstrings", "document this code", "add comments", "write documentation for this file".
 argument-hint: "[file path or function name]"
+allowed-tools: Read Edit
 ---
 
 Add or improve documentation for: `$ARGUMENTS`
@@ -15,7 +16,13 @@ Read the file or function fully. Understand:
 - Its inputs, outputs, and side effects
 - Any non-obvious logic or decisions
 
-### 2. Determine documentation style
+### 2. Check existing documentation
+
+Before writing new docstrings, check if documentation already exists:
+- If docs exist but are outdated, **update them** rather than rewriting from scratch.
+- If type hints or annotations already convey the information (e.g., `def get_user(id: int) -> User`), avoid writing a docstring that just restates the types. Only add a docstring if it provides information beyond what the signature shows.
+
+### 3. Determine documentation style
 
 Follow the convention used in the existing codebase. If none exists, use the language default:
 
@@ -27,8 +34,13 @@ Follow the convention used in the existing codebase. If none exists, use the lan
 | Rust | rustdoc (`/// ...` for public, `//! ...` for modules) |
 | Java | Javadoc (`/** ... */`) |
 | Ruby | YARD (`# @param`, `# @return`) |
+| C++ | Doxygen (`/** ... */`) |
+| C# | XML doc comments (`/// ...`) |
+| Kotlin | KDoc (`/** ... */`) |
+| Swift | SwiftDoc (`/// ...`) |
+| PHP | PHPDoc (`/** ... */`) |
 
-### 3. What to document
+### 4. What to document
 
 **Always document:**
 - Public functions, methods, and classes
@@ -48,13 +60,13 @@ Follow the convention used in the existing codebase. If none exists, use the lan
 - Code that already has clear names
 - Commented-out code (remove it instead)
 
-### 4. Apply documentation
+### 5. Apply documentation
 
 Write the docstrings and comments. Keep them:
 - Accurate — if behavior changes, update the docs
 - Concise — one sentence for simple functions, more for complex ones
 - Up to date — don't document what the code doesn't do
 
-### 5. Report
+### 6. Report
 
 List each function/class that was documented and a one-line summary of what was added. If any logic was too unclear to document accurately, flag it as needing clarification.

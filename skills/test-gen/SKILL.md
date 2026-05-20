@@ -2,13 +2,28 @@
 name: test-gen
 description: Generate comprehensive unit tests for a function, class, or module. Covers happy path, edge cases, and error handling. Triggers on "write tests for", "generate tests", "add unit tests", "test this function".
 argument-hint: "[file path or function/class name]"
+allowed-tools: Read Edit Write Bash(*test*) Bash(*spec*) Bash(npm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *)
 ---
 
 Generate thorough unit tests for: `$ARGUMENTS`
 
+## Mock philosophy
+
+Prefer real dependencies over mocks for integration-critical code. Only mock:
+- External services (network calls, APIs)
+- Database connections
+- Filesystem operations
+- Time-dependent behavior
+
+Over-mocking creates tests that pass but don't catch real issues. If a dependency is part of your own codebase and fast to run, use the real thing. Mocks should be a last resort, not a default.
+
 ## Process
 
-### 1. Read and understand the target
+### 1. Run existing tests first
+
+Before adding any new tests, run the existing test suite to confirm the baseline passes. If existing tests are already failing, fix or flag those before generating new ones. You need a green baseline to verify that new tests are testing the right thing.
+
+### 2. Read and understand the target
 
 Read the source file completely. Identify:
 - What the function/class is supposed to do
@@ -17,7 +32,7 @@ Read the source file completely. Identify:
 - Error conditions and how they're signaled (throw, return null, error code, etc.)
 - Any existing tests (avoid duplication, follow existing patterns)
 
-### 2. Identify test cases
+### 3. Identify test cases
 
 For each function/method, cover:
 
@@ -42,7 +57,7 @@ For each function/method, cover:
 - Verify calls to dependencies (use mocks/spies)
 - Verify cleanup happens
 
-### 3. Write the tests
+### 4. Write the tests
 
 Follow the existing test framework and conventions in the project. If no tests exist, use the most common framework for the language:
 - TypeScript/JS → Vitest or Jest
@@ -59,7 +74,7 @@ Each test should:
 
 Use mocks/stubs for external dependencies (network, DB, filesystem, time).
 
-### 4. Verify
+### 5. Verify
 
 Run the generated tests and confirm they pass. If any fail, fix the test (wrong expectation) or flag a bug (implementation is wrong).
 
