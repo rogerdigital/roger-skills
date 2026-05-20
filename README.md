@@ -13,12 +13,17 @@ Invoke with a slash command: `/commit`, `/debug my-file.go`, `/pr-review 42`
 | Skill | Trigger | Description |
 |---|---|---|
 | [commit](skills/commit/SKILL.md) | `/commit` | Stage changes and write a Conventional Commit message |
+| [create-pr](skills/create-pr/SKILL.md) | `/create-pr` | Create a PR with title, description, and test plan |
 | [pr-review](skills/pr-review/SKILL.md) | `/pr-review [PR]` | Review a PR for correctness, security, tests, and style |
+| [security-review](skills/security-review/SKILL.md) | `/security-review` | Audit code for OWASP Top 10, secret leaks, and insecure patterns |
 | [debug](skills/debug/SKILL.md) | `/debug` | Systematically diagnose a bug and fix the root cause |
 | [refactor](skills/refactor/SKILL.md) | `/refactor [file]` | Improve code clarity without changing behavior |
+| [simplify](skills/simplify/SKILL.md) | `/simplify [file]` | Remove unnecessary complexity — dead code, over-abstraction, YAGNI |
 | [test-gen](skills/test-gen/SKILL.md) | `/test-gen [file]` | Generate unit tests covering happy path, edges, and errors |
-| [changelog](skills/changelog/SKILL.md) | `/changelog [tag]` | Generate a Keep a Changelog entry from recent commits |
 | [docstring](skills/docstring/SKILL.md) | `/docstring [file]` | Add or improve docstrings and inline comments |
+| [changelog](skills/changelog/SKILL.md) | `/changelog [tag]` | Generate a Keep a Changelog entry from recent commits |
+| [adr](skills/adr/SKILL.md) | `/adr` | Create an Architecture Decision Record |
+| [spec](skills/spec/SKILL.md) | `/spec` | Write a requirements specification with acceptance criteria |
 
 ## Installation
 
