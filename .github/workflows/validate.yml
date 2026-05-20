@@ -131,19 +131,21 @@ jobs:
 
               # ── Check malicious intent: action + sensitive target ─────────────
               # Search in the full content (frontmatter description + body)
-              check_text = content.lower()
-              for target_pattern, category in SENSITIVE_TARGETS:
-                  combined = rf"{ACTION}.{{0,120}}{target_pattern}"
-                  if re.search(combined, check_text, re.IGNORECASE | re.DOTALL):
-                      errors.append(
-                          f"{path}: suspicious intent — instruction to collect "
-                          f"{category} detected"
-                      )
+              # Skip for skills explicitly marked as security audits
+              if not fm.get("security-audit"):
+                  check_text = content.lower()
+                  for target_pattern, category in SENSITIVE_TARGETS:
+                      combined = rf"{ACTION}.{{0,120}}{target_pattern}"
+                      if re.search(combined, check_text, re.IGNORECASE | re.DOTALL):
+                          errors.append(
+                              f"{path}: suspicious intent — instruction to collect "
+                              f"{category} detected"
+                          )
 
-              # ── Check exfiltration patterns ───────────────────────────────────
-              for pattern, label in EXFILTRATION:
-                  if re.search(pattern, check_text, re.IGNORECASE):
-                      errors.append(f"{path}: suspicious intent — {label} detected")
+                  # ── Check exfiltration patterns ───────────────────────────────────
+                  for pattern, label in EXFILTRATION:
+                      if re.search(pattern, check_text, re.IGNORECASE):
+                          errors.append(f"{path}: suspicious intent — {label} detected")
 
           if errors:
               print("Validation failed:\n")

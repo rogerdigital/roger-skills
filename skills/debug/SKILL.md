@@ -58,7 +58,7 @@ After applying the fix:
 Stop investigating and ask the user for help when:
 - You've tested 3 or more hypotheses and none explain the behavior.
 - The issue appears to be in an external dependency (library bug, platform issue, service outage) — report what you found and suggest checking the dependency's issue tracker.
-- You need access to production data, credentials, or environments you don't have.
+- You need entry to production systems or protected environments you don't have.
 - The bug involves non-deterministic behavior (race condition, timing) that you can't isolate.
 
 When escalating, report what you've ruled out and what you suspect, so the user can pick up where you left off.

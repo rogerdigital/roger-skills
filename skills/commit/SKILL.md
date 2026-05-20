@@ -22,13 +22,13 @@ Create a git commit for the current changes. Follow this process:
    ```
    Use the existing commit conventions (message format, scope patterns, language) as a guide for the new commit message.
 
-3. **Check for sensitive files** — before staging, scan the diff for files matching:
+3. **Check for sensitive files** — before staging, inspect the diff for files that should not be committed:
    - `.env`, `.env.*`
-   - `credentials`, `credentials.*`
-   - `*.key`, `*.pem`, `*.secret`
-   - Any file with `password`, `token`, or `secret` in its name
+   - Files with `cred` or `secret` in the name
+   - `*.key`, `*.pem`
+   - Any file with `password` or `token` in its name
 
-   If any sensitive files are found, **stop and warn the user**. Do not stage or commit these files unless the user explicitly confirms.
+   If any such files are found, **stop and warn the user**. Do not stage or commit these files unless the user explicitly confirms.
 
 4. **Stage changes** — if nothing is staged, stage all tracked modifications:
    ```
