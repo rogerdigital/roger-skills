@@ -22,6 +22,9 @@ Invoke with a slash command: `/commit`, `/debug my-file.go`, `/pr-review 42`
 | [test-gen](skills/test-gen/SKILL.md) | `/test-gen [file]` | Generate unit tests covering happy path, edges, and errors |
 | [docstring](skills/docstring/SKILL.md) | `/docstring [file]` | Add or improve docstrings and inline comments |
 | [changelog](skills/changelog/SKILL.md) | `/changelog [tag]` | Generate a Keep a Changelog entry from recent commits |
+| [migrate](skills/migrate/SKILL.md) | `/migrate [path]` | Audit database migrations for lock risks, data loss, and zero-downtime safety |
+| [dep-update](skills/dep-update/SKILL.md) | `/dep-update` | Analyze outdated dependencies and produce a prioritized batch upgrade plan |
+| [postmortem](skills/postmortem/SKILL.md) | `/postmortem` | Generate a blameless incident postmortem with timeline, RCA, and action items |
 | [adr](skills/adr/SKILL.md) | `/adr` | Create an Architecture Decision Record |
 | [spec](skills/spec/SKILL.md) | `/spec` | Write a requirements specification with acceptance criteria |
 
