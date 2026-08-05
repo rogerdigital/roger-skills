@@ -27,6 +27,9 @@ Invoke with a slash command: `/commit`, `/debug my-file.go`, `/pr-review 42`
 | [postmortem](skills/postmortem/SKILL.md) | `/postmortem` | Generate a blameless incident postmortem with timeline, RCA, and action items |
 | [adr](skills/adr/SKILL.md) | `/adr` | Create an Architecture Decision Record |
 | [spec](skills/spec/SKILL.md) | `/spec` | Write a requirements specification with acceptance criteria |
+| [release-notes](skills/release-notes/SKILL.md) | `/release-notes [ver]` | Generate user-facing release notes grouped by impact, with breaking-change prominence |
+| [hotfix](skills/hotfix/SKILL.md) | `/hotfix` | Ship an urgent production fix safely — triage, minimal fix, verify, PR |
+| [revert](skills/revert/SKILL.md) | `/revert [commit]` | Safely revert a commit or range — checks downstream dependencies before acting |
 
 ## Installation
 
