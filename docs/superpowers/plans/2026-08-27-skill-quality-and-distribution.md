@@ -361,35 +361,45 @@ a general Markdown or shell parser. The parser must apply these rules:
 - Validate every command segment in labelled `bash` and `sh` blocks. The fixed
   command-name list is only for identifying executable shell examples in
   unlabelled fences. Shell syntax uses `shlex`; an unterminated quote is a
-  validation error, never a whitespace-split fallback.
+  validation error, never a whitespace-split fallback. For each labelled
+  command, parse and normalize first, always inspect dangerous behavior next,
+  and only then let a reasoned ignore marker skip permission coverage.
 - Parse CommonMark fences with up to three leading spaces, backticks or tildes,
   an opening length of at least three, and a same-character closing fence at
   least as long. Report unclosed fences and retain original `SKILL.md` line
   numbers in errors. This preserves four-backtick Markdown templates that
   include triple-backtick examples.
-- Restrict sensitive-intent matching to conservative clauses: sentence and
-  newline boundaries, semicolons, and comma-led contrast conjunctions. Skip a
-  clause containing `do not`, `don't`, `never`, `avoid`, or `without`, but do
-  not let that protection suppress a later collection or exfiltration clause.
-  `security-audit: true` only exempts those content-intent checks.
+- Restrict sensitive-intent matching to sentence/clause-local spans that never
+  cross `.`, `!`, `?`, `;`, `,`, or newlines. Apply a negation only when it
+  directly precedes the matched action in that clause; it must not suppress an
+  unrelated later collection or exfiltration action. ACTION alternatives use
+  word boundaries to avoid substring false positives. `security-audit: true`
+  only exempts those content-intent checks.
 - Treat `chmod` modes with a final numeric digit of `2`, `3`, `6`, or `7` as
-  world-writable, while allowing `755`. Also reject symbolic clauses that grant
-  write access when any valid who-class `[ugoa]+` contains `o` or `a`, including
-  `o+w`, `go+w`, `ugo+w`, `uo+w`, `a+w`, `ugo=rw`, `o=rw`, and `a=rw`; allow
-  owner/group-only clauses such as `u+w` and `ug+w`.
+  world-writable, while allowing `755`. Derive the mode from parsed `chmod`
+  tokens after skipping common recursive, force, verbosity, and `--` options;
+  do not rely on a raw command regex. Reject symbolic `+`/`=` clauses with `w`
+  when who is omitted or any valid who-class `[ugoa]+` contains `o` or `a`, but
+  allow owner/group-only clauses such as `u+w` and `ug+w`.
+- Inspect dangerous behavior in normalized body commands as well as declared
+  permissions: force pushes include `--force`, `-f`, and later force options;
+  dangerous checks survive wildcard permissions and ignore markers. Treat a
+  standalone `&` as a command separator, but not `>&` or `&>` redirections.
 - Read inventory links only from the `## Skills` README section. Require each
   link label to equal its directory, reject duplicates, and compare the linked
   directory set exactly with `skills/*`.
 
-The regression suite contains 34 tests total: the original repository,
+The regression suite contains 39 tests total: the original repository,
 frontmatter, dangerous-tool, pipeline, ignore-marker, inventory, audit, and
 leading-wildcard cases; plus labelled unknown-command coverage; indented,
 tilde, longer-close, and unclosed fences; character-class and question-mark
 permission patterns; invalid shell syntax; protective sensitive text; genuine
 credential collection and exfiltration; real line numbers; safe and unsafe
-`chmod` modes (including combined who-classes that grant other/all write access);
-non-string and empty `allowed-tools` Bash patterns; protected-clause bypasses;
-and duplicate and mismatched README entries.
+`chmod` modes (including options and combined who-classes that grant
+other/all write access); non-string and empty `allowed-tools` Bash patterns;
+match-scoped negation and ACTION-boundary cases; dangerous body commands under
+wildcards and ignore markers; standalone background separators; and duplicate
+and mismatched README entries.
 
 - [ ] **Step 1: Add the validator module and data model**
 
@@ -423,20 +433,17 @@ KNOWN_SHELL_COMMANDS = {
 }
 DANGEROUS_TOOLS = (
     r"rm\s+-[rf]{1,2}f?",
-    r"git\s+push\s+--force",
     r"--no-verify",
     r"curl\b.*\|\s*(?:bash|sh)",
     r"wget\b.*\|\s*(?:bash|sh)",
-    r"chmod\s+[0-7]*[2367]\b",
-    r"chmod\b[^\n)]*\b(?=[ugoa]*[oa])[ugoa]+\s*(?:\+\s*[rwxXstugo]*w|=\s*[rwxXstugo]*w)",
     r"sudo\s+rm",
     r":\s*\(\)\s*\{.*\}\s*;",
     r"mkfs\b",
     r"dd\s+if=",
 )
 ACTION = (
-    r"(?:search(?:\s+for)?|find|locate|read|extract|collect|gather|grep|scan|"
-    r"look\s+for|retrieve|fetch|access|dump|list|cat|harvest)"
+    r"\b(?:search(?:\s+for)?|find|locate|read|extract|collect|gather|grep|scan|"
+    r"look\s+for|retrieve|fetch|access|dump|list|cat|harvest)\b"
 )
 SENSITIVE_TARGETS = (
     (r"(?:api[\s_-]*key|access[\s_-]*key|secret[\s_-]*key|private[\s_-]*key|auth(?:entication)?[\s_-]*token|bearer[\s_-]*token|\.env\b|credential|password|passwd|passphrase)", "credentials/secrets"),
@@ -683,7 +690,7 @@ Run:
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Expected: 34 tests pass.
+Expected: 39 tests pass.
 
 - [ ] **Step 6: Run the validator on the real repository**
 
@@ -739,7 +746,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 scripts/validate_skills.py
 ```
 
-Expected: dependency installation succeeds, 34 tests pass, and all 18 skills
+Expected: dependency installation succeeds, 39 tests pass, and all 18 skills
 pass repository validation.
 
 - [ ] **Step 3: Commit the CI entrypoint**
@@ -1123,7 +1130,7 @@ git diff --check main...HEAD
 git status --short --branch
 ```
 
-Expected: 34 tests pass, all 20 skills pass, no whitespace errors, and the
+Expected: 39 tests pass, all 20 skills pass, no whitespace errors, and the
 worktree is clean.
 
 - [ ] **Step 2: Review the commit series**

@@ -12,20 +12,17 @@ import yaml
 
 DANGEROUS_TOOLS = [
     r"rm\s+-[rf]{1,2}f?",
-    r"git\s+push\s+--force",
     r"--no-verify",
     r"curl\b.*\|\s*(?:bash|sh)",
     r"wget\b.*\|\s*(?:bash|sh)",
-    r"chmod\s+[0-7]*[2367]\b",
-    r"chmod\b[^\n)]*\b(?=[ugoa]*[oa])[ugoa]+\s*(?:\+\s*[rwxXstugo]*w|=\s*[rwxXstugo]*w)",
     r"sudo\s+rm",
     r":\s*\(\)\s*\{.*\}\s*;",
     r"mkfs\b",
     r"dd\s+if=",
 ]
 ACTION = (
-    r"(?:search(?:\s+for)?|find|locate|read|extract|collect|gather|grep|scan|"
-    r"look\s+for|retrieve|fetch|access|dump|list|cat|harvest)"
+    r"\b(?:search(?:\s+for)?|find|locate|read|extract|collect|gather|grep|scan|"
+    r"look\s+for|retrieve|fetch|access|dump|list|cat|harvest)\b"
 )
 SENSITIVE_TARGETS = [
     (
@@ -54,7 +51,7 @@ SENSITIVE_TARGETS = [
 ]
 EXFILTRATION = [
     (
-        r"(?:send|upload|post|transmit|exfiltrate|forward)\s+(?:\w+\s+)*?to\s+https?://",
+        r"\b(?:send|upload|post|transmit|exfiltrate|forward)\b[^.!?;,\n]*?\bto\s+https?://",
         "exfiltration to external URL",
     ),
     (r"curl\b[^`\n]*-[xX]\s*POST[^`\n]*https?://", "curl POST to external URL"),
@@ -72,6 +69,9 @@ IGNORE_MARKER = re.compile(
 ANY_IGNORE_MARKER = re.compile(r"skill-validator:\s*ignore-shell")
 README_SKILL_LINK = re.compile(r"\[([^\]]+)\]\(skills/([^/]+)/SKILL\.md\)")
 ENV_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+CHMOD_OPTIONS = {
+    "-R", "--recursive", "-f", "-v", "-c", "--changes", "--silent", "--quiet", "--verbose",
+}
 
 
 def relative_path(root: Path, path: Path) -> str:
@@ -99,7 +99,7 @@ def split_shell_segments(line: str) -> list[str]:
 
     segments: list[list[str]] = [[]]
     for token in tokens:
-        if token in {"&&", "||", "|", ";"}:
+        if token in {"&&", "||", "|", ";", "&"}:
             if segments[-1]:
                 segments.append([])
             continue
@@ -170,28 +170,73 @@ def invalid_bash_pattern(pattern: str) -> str | None:
     return "invalid Bash permission pattern; only one final ' *' argument wildcard is allowed"
 
 
+def unsafe_chmod_mode(tokens: list[str]) -> str | None:
+    index = 1
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "--":
+            index += 1
+            break
+        if token in CHMOD_OPTIONS:
+            index += 1
+            continue
+        break
+    if index >= len(tokens):
+        return None
+    mode = tokens[index]
+    if re.fullmatch(r"[0-7]+", mode) and mode[-1] in "2367":
+        return f"world-writable chmod mode '{mode}'"
+    for clause in mode.split(","):
+        match = re.fullmatch(r"(?P<who>[ugoa]*)(?P<operator>[+=])(?P<permissions>[rwxXstugo]+)", clause)
+        if match and "w" in match.group("permissions"):
+            who = match.group("who")
+            if not who or "o" in who or "a" in who:
+                return f"world-writable chmod clause '{clause}'"
+    return None
+
+
+def dangerous_command_reason(command: str) -> str | None:
+    try:
+        tokens = shlex.split(command, posix=True, comments=True)
+    except ValueError:
+        return None
+    if len(tokens) >= 2 and tokens[:2] == ["git", "push"]:
+        if any(option == "-f" or option.startswith("--force") for option in tokens[2:]):
+            return "force push"
+    if tokens and tokens[0] == "chmod":
+        return unsafe_chmod_mode(tokens)
+    for pattern in DANGEROUS_TOOLS:
+        if re.search(pattern, command, re.IGNORECASE):
+            return f"matched pattern '{pattern}'"
+    return None
+
+
 def check_security(path: str, content: str, frontmatter: dict[object, object]) -> list[str]:
     errors: list[str] = []
-    allowed_tools = str(frontmatter.get("allowed-tools", ""))
-    for pattern in DANGEROUS_TOOLS:
-        if re.search(pattern, allowed_tools, re.IGNORECASE):
-            errors.append(f"{path}: dangerous command in allowed-tools: matched pattern '{pattern}'")
+    allowed_tools = frontmatter.get("allowed-tools", "")
+    if isinstance(allowed_tools, str):
+        for command in extract_bash_patterns(allowed_tools):
+            if reason := dangerous_command_reason(command):
+                errors.append(f"{path}: dangerous command in allowed-tools: {reason}")
 
     if frontmatter.get("security-audit") is True:
         return errors
-    sentences = re.split(r"(?<=[.!?])\s+|\n+", content.lower())
-    protective = re.compile(r"\b(?:do not|don't|never|avoid|without)\b")
-    for sentence in sentences:
-        clauses = re.split(r";|,\s*(?=(?:but|however|yet|although)\b)", sentence)
-        for clause in clauses:
-            if protective.search(clause):
-                continue
-            for target_pattern, category in SENSITIVE_TARGETS:
-                if re.search(rf"{ACTION}.{{0,120}}{target_pattern}", clause, re.IGNORECASE):
-                    errors.append(f"{path}: suspicious intent — instruction to collect {category} detected")
-            for pattern, label in EXFILTRATION:
-                if re.search(pattern, clause, re.IGNORECASE):
-                    errors.append(f"{path}: suspicious intent — {label} detected")
+    clauses = re.split(r"[.!?;,\n]+", content.lower())
+    negation = re.compile(r"\b(?:do not|don't|never|avoid|without)\s*$")
+    for clause in clauses:
+        for target_pattern, category in SENSITIVE_TARGETS:
+            pattern = re.compile(
+                rf"(?P<action>{ACTION})[^.!?;,\n]{{0,120}}{target_pattern}", re.IGNORECASE
+            )
+            for match in pattern.finditer(clause):
+                if negation.search(clause[: match.start("action")]):
+                    continue
+                errors.append(f"{path}: suspicious intent — instruction to collect {category} detected")
+        for pattern, label in EXFILTRATION:
+            for match in re.finditer(pattern, clause, re.IGNORECASE):
+                if negation.search(clause[: match.start()]):
+                    continue
+                errors.append(f"{path}: suspicious intent — {label} detected")
     return errors
 
 
@@ -228,6 +273,9 @@ def check_shell_blocks(
             if not is_shell:
                 errors.append(f"{context}: shell command in fenced block must be labelled bash or sh")
                 continue
+            for command in commands:
+                if reason := dangerous_command_reason(command):
+                    errors.append(f"{context}: dangerous command: {reason}")
             if ignored:
                 continue
             for command in commands:
