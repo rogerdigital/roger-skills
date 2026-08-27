@@ -71,7 +71,9 @@ README_SKILL_LINK = re.compile(r"\[([^\]]+)\]\(skills/([^/]+)/SKILL\.md\)")
 ENV_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 CHMOD_OPTIONS = {
     "-R", "--recursive", "-f", "-v", "-c", "--changes", "--silent", "--quiet", "--verbose",
+    "--preserve-root", "--no-preserve-root", "--help", "--version",
 }
+CHMOD_OPTIONS_WITH_ARGUMENT = {"--reference"}
 COMMAND_OPTIONS = {"-p", "-v", "-V"}
 
 
@@ -92,12 +94,13 @@ def extract_bash_patterns(value: object) -> list[str]:
     return [match.group(1).strip() for match in re.finditer(r"Bash\(([^)]*)\)", str(value))]
 
 
-def split_shell_segments(line: str) -> list[str]:
-    segments: list[str] = []
+def split_shell_segments(line: str) -> list[tuple[str, str | None]]:
+    segments: list[tuple[str, str | None]] = []
     start = 0
     index = 0
     quote: str | None = None
     in_word = False
+    preceding_connector: str | None = None
     while index < len(line):
         character = line[index]
         if quote:
@@ -147,7 +150,8 @@ def split_shell_segments(line: str) -> list[str]:
         if connector_length:
             segment = line[start:index].strip()
             if segment:
-                segments.append(segment)
+                segments.append((segment, preceding_connector))
+            preceding_connector = line[index : index + connector_length]
             index += connector_length
             start = index
             in_word = False
@@ -156,7 +160,7 @@ def split_shell_segments(line: str) -> list[str]:
         index += 1
     segment = line[start:index].strip()
     if segment:
-        segments.append(segment)
+        segments.append((segment, preceding_connector))
     return segments
 
 
@@ -230,6 +234,12 @@ def unsafe_chmod_mode(tokens: list[str]) -> str | None:
         if token == "--":
             index += 1
             break
+        if token in CHMOD_OPTIONS_WITH_ARGUMENT:
+            index += 2
+            continue
+        if any(token.startswith(f"{option}=") for option in CHMOD_OPTIONS_WITH_ARGUMENT):
+            index += 1
+            continue
         if token in CHMOD_OPTIONS or (
             token.startswith("-")
             and not token.startswith("--")
@@ -257,20 +267,34 @@ def unwrap_command_tokens(tokens: list[str]) -> list[str]:
     index = 0
     while index < len(tokens) and ENV_ASSIGNMENT.match(tokens[index]):
         index += 1
-    if index < len(tokens) and tokens[index] == "command":
-        index += 1
-        if index < len(tokens) and tokens[index] == "--":
+    while index < len(tokens):
+        if tokens[index] == "command":
             index += 1
-        while index < len(tokens) and tokens[index] in COMMAND_OPTIONS:
-            index += 1
-    elif index < len(tokens) and tokens[index] == "env":
+            if index < len(tokens) and tokens[index] == "--":
+                index += 1
+            while index < len(tokens) and tokens[index] in COMMAND_OPTIONS:
+                index += 1
+            continue
+        if tokens[index] != "env":
+            break
         index += 1
         while index < len(tokens):
             token = tokens[index]
             if token == "--":
                 index += 1
                 break
-            if ENV_ASSIGNMENT.match(token) or token.startswith("-"):
+            if ENV_ASSIGNMENT.match(token):
+                index += 1
+                continue
+            if token in {"-u", "--unset", "-C", "--chdir"}:
+                index += 2
+                continue
+            if (
+                token.startswith("-u") and len(token) > 2
+            ) or token.startswith("--unset=") or token.startswith("--chdir="):
+                index += 1
+                continue
+            if token.startswith("-"):
                 index += 1
                 continue
             break
@@ -284,7 +308,11 @@ def dangerous_command_reason(command: str) -> str | None:
         return None
     tokens = unwrap_command_tokens(tokens)
     if len(tokens) >= 2 and tokens[:2] == ["git", "push"]:
-        if any(option == "-f" or option.startswith("--force") for option in tokens[2:]):
+        if any(
+            option.startswith("--force")
+            or (option.startswith("-") and not option.startswith("--") and "f" in option[1:])
+            for option in tokens[2:]
+        ):
             return "force push"
     if tokens and tokens[0] == "rm":
         recursive = any(
@@ -354,12 +382,15 @@ def check_shell_blocks(
             context = f"{path}:{line_number + 1 + offset}"
             try:
                 segments = split_shell_segments(line)
-                commands = [
-                    command for segment in segments if (command := normalize_shell_command(segment))
+                commands_with_connectors = [
+                    (command, connector)
+                    for segment, connector in segments
+                    if (command := normalize_shell_command(segment))
                 ]
             except ValueError as error:
                 errors.append(f"{context}: invalid shell syntax — {error}")
                 continue
+            commands = [command for command, _ in commands_with_connectors]
             if not is_shell:
                 commands = [
                     command for command in commands if command.split(maxsplit=1)[0] in SHELL_COMMANDS
@@ -369,6 +400,15 @@ def check_shell_blocks(
             if not is_shell:
                 errors.append(f"{context}: shell command in fenced block must be labelled bash or sh")
                 continue
+            for index, (command, connector) in enumerate(commands_with_connectors):
+                if index == 0 or connector not in {"|", "|&"}:
+                    continue
+                preceding_command = commands_with_connectors[index - 1][0]
+                if (
+                    preceding_command.split(maxsplit=1)[0] in {"curl", "wget"}
+                    and command.split(maxsplit=1)[0] in {"bash", "sh"}
+                ):
+                    errors.append(f"{context}: dangerous command: download-to-shell pipeline")
             for command in commands:
                 if reason := dangerous_command_reason(command):
                     errors.append(f"{context}: dangerous command: {reason}")

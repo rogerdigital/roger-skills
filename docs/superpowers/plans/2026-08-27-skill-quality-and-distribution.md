@@ -368,6 +368,9 @@ a general Markdown or shell parser. The parser must apply these rules:
   ends it; control connectors reset it. A `#` starts a comment only outside a
   word, so it is literal after escaped whitespace as well as mid-word. Since
   the scanner owns comments, later `shlex` tokenization uses `comments=False`.
+  Preserve each segment's preceding connector so normalized `curl` or `wget`
+  commands piped through `|` or `|&` to normalized `bash` or `sh` commands are
+  rejected structurally before ignore-marker or permission handling.
   An unterminated quote is a validation error, never a whitespace-split
   fallback. For each labelled
   command, parse and normalize first, always inspect dangerous behavior next,
@@ -394,7 +397,9 @@ a general Markdown or shell parser. The parser must apply these rules:
   permissions: force pushes include `--force`, `-f`, and later force options;
   dangerous checks survive wildcard permissions and ignore markers. Unwrap
   leading environment assignments plus `command` and `env` wrappers before
-  inspection. Detect recursive `rm` from long, short, and combined flags.
+  inspection; `env` consumes its value-taking unset and chdir options,
+  assignments, and `--` before its executable. Detect force pushes in combined
+  short options and recursive `rm` from long, short, and combined flags.
   Treat `&` as a separator only when it is not immediately adjacent to a
   redirection character; whitespace in `& >` therefore makes it a separator,
   unlike `>&`, `&>`, `2>&1`, or `<&`.
@@ -413,8 +418,10 @@ other/all write access); non-string and empty `allowed-tools` Bash patterns;
 match-scoped negation and ACTION-boundary cases; dangerous body commands under
 wildcards and ignore markers; standalone background separators and preserved
 redirections; quoted/escaped connectors; wrapper force pushes; recursive rm;
-combined chmod flags; shell comment and escaped-whitespace word boundaries;
-and duplicate and mismatched README entries.
+combined chmod flags and preserve-root options; shell comment and
+escaped-whitespace word boundaries; dangerous `curl`/`wget` download-to-shell
+pipelines (including ignored examples); wrapper option force pushes; and
+duplicate and mismatched README entries.
 
 - [ ] **Step 1: Add the validator module and data model**
 
