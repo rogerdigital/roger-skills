@@ -33,15 +33,73 @@ Invoke with a slash command: `/commit`, `/debug my-file.go`, `/pr-review 42`
 
 ## Installation
 
-Copy the skills you want into your project or home directory:
+Copy only the skills you want to install.
+
+### Claude Code
 
 ```bash
-# Project-level (affects this repo only)
-cp -r skills/commit .claude/skills/
+# Project-level
+mkdir -p .claude/skills
+cp -R skills/commit .claude/skills/commit
 
-# Personal (affects all projects)
-cp -r skills/commit ~/.claude/skills/
+# User-level
+mkdir -p ~/.claude/skills
+cp -R skills/commit ~/.claude/skills/commit
 ```
+
+### Codex
+
+```bash
+# User-level
+mkdir -p ~/.codex/skills
+cp -R skills/commit ~/.codex/skills/commit
+```
+
+For project-level Codex installation, follow the discovery path documented by
+your installed Codex version. This repository does not assume an unverified
+project-level path.
+
+### Update or remove a skill
+
+Run the copy command again to update an installed copy:
+
+```bash
+cp -R skills/commit ~/.codex/skills/commit
+```
+
+Before removal, verify that the target is the exact installed skill directory.
+Then remove that copy:
+
+```bash
+rm -rf ~/.codex/skills/commit
+```
+
+## Permission impact
+
+`allowed-tools` declares the maximum capability a skill may request. The
+workflow rules inside each skill still determine whether an action is
+appropriate in the current repository and when user confirmation is required.
+
+| Level | Skills | Impact |
+|---|---|---|
+| Read-only | dep-update, migrate, postmortem, pr-review, security-review | Inspect files, repository state, dependencies, or GitHub metadata without writing project or remote state |
+| Local files | adr, changelog, debug, docstring, refactor, release-notes, simplify, spec, test-gen | May edit files in the current worktree and run local checks |
+| Local Git | commit | May stage and commit local changes without updating remote refs |
+| Remote Git or GitHub | create-pr, hotfix, revert | May create or update remote Git/GitHub state as defined by the workflow |
+
+## Contributing
+
+Install the validation dependency, run the regression suite, and validate the
+real skill collection before submitting changes:
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+python3 scripts/validate_skills.py
+```
+
+No reuse license has been selected yet. Public source visibility does not by
+itself grant permission to copy, modify, or redistribute this repository.
 
 ## Design guidelines
 
