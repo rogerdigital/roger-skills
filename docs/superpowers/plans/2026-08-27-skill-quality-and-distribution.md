@@ -368,9 +368,11 @@ a general Markdown or shell parser. The parser must apply these rules:
   ends it; control connectors reset it. A `#` starts a comment only outside a
   word, so it is literal after escaped whitespace as well as mid-word. Since
   the scanner owns comments, later `shlex` tokenization uses `comments=False`.
-  Preserve each segment's preceding connector so normalized `curl` or `wget`
-  commands piped through `|` or `|&` to normalized `bash` or `sh` commands are
-  rejected structurally before ignore-marker or permission handling.
+  Preserve each segment's preceding connector and derive its actual executable
+  through the same recursive `command`/`env` unwrapping used by dangerous
+  command inspection. Reject `curl` or `wget` piped through `|` or `|&` to
+  `bash` or `sh` structurally before ignore-marker or permission handling,
+  including wrapped endpoints.
   An unterminated quote is a validation error, never a whitespace-split
   fallback. For each labelled
   command, parse and normalize first, always inspect dangerous behavior next,
@@ -420,8 +422,8 @@ wildcards and ignore markers; standalone background separators and preserved
 redirections; quoted/escaped connectors; wrapper force pushes; recursive rm;
 combined chmod flags and preserve-root options; shell comment and
 escaped-whitespace word boundaries; dangerous `curl`/`wget` download-to-shell
-pipelines (including ignored examples); wrapper option force pushes; and
-duplicate and mismatched README entries.
+pipelines (including ignored and wrapped-endpoint examples); wrapper option
+force pushes; and duplicate and mismatched README entries.
 
 - [ ] **Step 1: Add the validator module and data model**
 

@@ -301,6 +301,15 @@ def unwrap_command_tokens(tokens: list[str]) -> list[str]:
     return tokens[index:]
 
 
+def actual_executable_name(command: str) -> str | None:
+    try:
+        tokens = shlex.split(command, posix=True, comments=False)
+    except ValueError:
+        return None
+    tokens = unwrap_command_tokens(tokens)
+    return tokens[0] if tokens else None
+
+
 def dangerous_command_reason(command: str) -> str | None:
     try:
         tokens = shlex.split(command, posix=True, comments=False)
@@ -405,8 +414,8 @@ def check_shell_blocks(
                     continue
                 preceding_command = commands_with_connectors[index - 1][0]
                 if (
-                    preceding_command.split(maxsplit=1)[0] in {"curl", "wget"}
-                    and command.split(maxsplit=1)[0] in {"bash", "sh"}
+                    actual_executable_name(preceding_command) in {"curl", "wget"}
+                    and actual_executable_name(command) in {"bash", "sh"}
                 ):
                     errors.append(f"{context}: dangerous command: download-to-shell pipeline")
             for command in commands:
