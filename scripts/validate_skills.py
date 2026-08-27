@@ -97,26 +97,34 @@ def split_shell_segments(line: str) -> list[str]:
     start = 0
     index = 0
     quote: str | None = None
+    in_word = False
     while index < len(line):
         character = line[index]
         if quote:
             if character == "\\" and quote == '"':
+                in_word = True
                 index += 2
                 continue
             if character == quote:
                 quote = None
+            else:
+                in_word = True
             index += 1
             continue
         if character == "\\":
+            in_word = True
             index += 2
             continue
         if character in {"'", '"'}:
             quote = character
+            in_word = True
             index += 1
             continue
-        if character == "#" and (
-            index == 0 or line[index - 1].isspace() or line[index - 1] in "&|;"
-        ):
+        if character.isspace():
+            in_word = False
+            index += 1
+            continue
+        if character == "#" and not in_word:
             break
 
         connector_length = 0
@@ -126,6 +134,7 @@ def split_shell_segments(line: str) -> list[str]:
             elif (index > 0 and line[index - 1] in "><") or (
                 index + 1 < len(line) and line[index + 1] in "><"
             ):
+                in_word = True
                 index += 1
                 continue
             else:
@@ -141,7 +150,9 @@ def split_shell_segments(line: str) -> list[str]:
                 segments.append(segment)
             index += connector_length
             start = index
+            in_word = False
             continue
+        in_word = True
         index += 1
     segment = line[start:index].strip()
     if segment:

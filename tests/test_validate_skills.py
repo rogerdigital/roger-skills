@@ -211,6 +211,12 @@ class ValidateSkillsTest(unittest.TestCase):
         errors = validate_repository(self.valid_repository(literal_hash))
         self.assertTrue(any("dangerous command" in error for error in errors))
 
+        escaped_whitespace_hash = VALID_SKILL.replace(
+            "Bash(git status)", "Bash(echo *) Bash(rm *)"
+        ).replace("git status\n```", "echo foo\\ #bar; rm -rf /\n```")
+        errors = validate_repository(self.valid_repository(escaped_whitespace_hash))
+        self.assertTrue(any("dangerous command" in error for error in errors))
+
     def test_preserves_redirection_ampersands_within_one_command(self) -> None:
         for command in (
             "git status >& out",
