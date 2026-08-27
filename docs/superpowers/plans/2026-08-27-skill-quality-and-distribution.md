@@ -384,12 +384,15 @@ a general Markdown or shell parser. The parser must apply these rules:
 - Inspect dangerous behavior in normalized body commands as well as declared
   permissions: force pushes include `--force`, `-f`, and later force options;
   dangerous checks survive wildcard permissions and ignore markers. Treat a
-  standalone `&` as a command separator, but not `>&` or `&>` redirections.
+  standalone `&` as a command separator only when it is not adjacent to a
+  redirection token: retain it when the previous token ends in `>` or `<`, or
+  when the following token begins with `>` or `<` (covering `>&`, `&>`, and
+  `2>&1`).
 - Read inventory links only from the `## Skills` README section. Require each
   link label to equal its directory, reject duplicates, and compare the linked
   directory set exactly with `skills/*`.
 
-The regression suite contains 39 tests total: the original repository,
+The regression suite contains 40 tests total: the original repository,
 frontmatter, dangerous-tool, pipeline, ignore-marker, inventory, audit, and
 leading-wildcard cases; plus labelled unknown-command coverage; indented,
 tilde, longer-close, and unclosed fences; character-class and question-mark
@@ -398,8 +401,8 @@ credential collection and exfiltration; real line numbers; safe and unsafe
 `chmod` modes (including options and combined who-classes that grant
 other/all write access); non-string and empty `allowed-tools` Bash patterns;
 match-scoped negation and ACTION-boundary cases; dangerous body commands under
-wildcards and ignore markers; standalone background separators; and duplicate
-and mismatched README entries.
+wildcards and ignore markers; standalone background separators and preserved
+redirections; and duplicate and mismatched README entries.
 
 - [ ] **Step 1: Add the validator module and data model**
 
@@ -690,7 +693,7 @@ Run:
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Expected: 39 tests pass.
+Expected: 40 tests pass.
 
 - [ ] **Step 6: Run the validator on the real repository**
 
@@ -746,7 +749,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 scripts/validate_skills.py
 ```
 
-Expected: dependency installation succeeds, 39 tests pass, and all 18 skills
+Expected: dependency installation succeeds, 40 tests pass, and all 18 skills
 pass repository validation.
 
 - [ ] **Step 3: Commit the CI entrypoint**
@@ -1130,7 +1133,7 @@ git diff --check main...HEAD
 git status --short --branch
 ```
 
-Expected: 39 tests pass, all 20 skills pass, no whitespace errors, and the
+Expected: 40 tests pass, all 20 skills pass, no whitespace errors, and the
 worktree is clean.
 
 - [ ] **Step 2: Review the commit series**

@@ -184,6 +184,14 @@ class ValidateSkillsTest(unittest.TestCase):
         errors = validate_repository(self.valid_repository(skill))
         self.assertTrue(any("dangerous command" in error for error in errors))
 
+    def test_preserves_redirection_ampersands_within_one_command(self) -> None:
+        for command in ("git status >& out", "git status &> out", "git status 2>&1"):
+            with self.subTest(command=command):
+                skill = VALID_SKILL.replace("Bash(git status)", "Bash(git *)").replace(
+                    "git status\n```", f"{command}\n```"
+                )
+                self.assertEqual(validate_repository(self.valid_repository(skill)), [])
+
     def test_indented_bash_fence_is_validated(self) -> None:
         skill = VALID_SKILL.replace("allowed-tools: Bash(git status)", "allowed-tools: Read").replace(
             "```bash\ngit status\n```", "   ```bash\n   git status\n   ```"

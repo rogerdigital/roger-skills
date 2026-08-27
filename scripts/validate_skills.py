@@ -98,8 +98,13 @@ def split_shell_segments(line: str) -> list[str]:
     tokens = list(lexer)
 
     segments: list[list[str]] = [[]]
-    for token in tokens:
-        if token in {"&&", "||", "|", ";", "&"}:
+    for index, token in enumerate(tokens):
+        previous = tokens[index - 1] if index else ""
+        following = tokens[index + 1] if index + 1 < len(tokens) else ""
+        ampersand_is_redirection = token == "&" and (
+            previous.endswith((">", "<")) or following.startswith((">", "<"))
+        )
+        if token in {"&&", "||", "|", ";"} or (token == "&" and not ampersand_is_redirection):
             if segments[-1]:
                 segments.append([])
             continue
