@@ -81,10 +81,7 @@ git push -u origin <branch-name>
 Create the PR:
 
 ```bash
-gh pr create --base <base-branch> --title "<title>" --body "$(cat <<'EOF'
-<body>
-EOF
-)"
+gh pr create --base <base-branch> --title "<title>" --body "<body>"
 ```
 
 If there are linked issues, add `--fixes #123` or mention in the body.
