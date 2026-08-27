@@ -100,8 +100,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 scripts/validate_skills.py
 ```
 
-No reuse license has been selected yet. Public source visibility does not by
-itself grant permission to copy, modify, or redistribute this repository.
+This repository is available under the [MIT License](LICENSE).
 
 ## Design guidelines
 
