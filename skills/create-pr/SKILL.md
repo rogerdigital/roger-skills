@@ -2,7 +2,7 @@
 name: create-pr
 description: Create a pull request with a well-structured title, description, and test plan. Analyzes branch changes and generates PR content. Triggers on "create PR", "open a pull request", "make a PR", "push and PR", "/create-pr".
 argument-hint: "[optional base branch, e.g. main]"
-allowed-tools: Bash(git log *) Bash(git diff *) Bash(git push *) Bash(git branch *) Bash(gh pr create *)
+allowed-tools: Bash(git log *) Bash(git diff *) Bash(git status *) Bash(git push *) Bash(git branch *) Bash(gh pr create *)
 ---
 
 Create a pull request for the current branch. Base branch: `$ARGUMENTS` (defaults to `main`).

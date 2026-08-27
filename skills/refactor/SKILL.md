@@ -56,7 +56,7 @@ Make one logical change at a time. After each change, verify tests still pass if
 
 ### 5. Report
 
-```
+```markdown
 ## Changes made
 - [file:line] What was changed and why
 

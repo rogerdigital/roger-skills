@@ -66,7 +66,7 @@ One simplification at a time. After each:
 
 ### 6. Report
 
-```
+```markdown
 ## Simplifications
 - [file:line] What was removed/simplified and why
 

@@ -101,7 +101,7 @@ Where possible, infer table size impact:
 
 Output the report in this format:
 
-```
+```markdown
 ## Migration Safety Report
 
 **Files reviewed:** <list>

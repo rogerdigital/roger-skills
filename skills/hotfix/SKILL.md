@@ -2,7 +2,7 @@
 name: hotfix
 description: Ship an urgent production fix safely — triage severity, branch from production, apply the smallest possible fix, verify it, and open a PR for rapid review. Triggers on "hotfix", "urgent fix", "production bug", "ship a hotfix", "emergency fix", "p0 fix".
 argument-hint: "[bug description, failing test, or issue reference]"
-allowed-tools: Bash(git status *) Bash(git branch *) Bash(git checkout *) Bash(git log *) Bash(git diff *) Bash(git add *) Bash(git commit *) Bash(git push *) Bash(git tag *) Bash(gh pr create *) Bash(gh issue *) Read Edit Write
+allowed-tools: Bash(git status *) Bash(git branch *) Bash(git checkout *) Bash(git fetch *) Bash(git pull *) Bash(git log *) Bash(git diff *) Bash(git add *) Bash(git commit *) Bash(git push *) Bash(git tag *) Bash(gh pr create *) Bash(*test*) Bash(*spec*) Bash(npm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *) Read Edit Write
 ---
 
 Ship a hotfix for: `$ARGUMENTS`
@@ -81,7 +81,7 @@ If the bug cannot be reproduced locally, say so explicitly and explain how you v
 
 Write a conventional commit with a `fix` type and a scope indicating the area. Reference the incident or issue:
 
-```
+```text
 fix(<scope>): <one-line description of the user-visible bug>
 
 <2-3 lines: what was broken, root cause, why this fix is minimal and safe.>

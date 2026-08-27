@@ -10,14 +10,14 @@ Create a git commit for the current changes. Follow this process:
 ## Steps
 
 1. **Inspect current state**
-   ```
+   ```bash
    git status
    git diff --staged
    git diff
    ```
 
 2. **Check recent commit style**
-   ```
+   ```bash
    git log --oneline -5
    ```
    Use the existing commit conventions (message format, scope patterns, language) as a guide for the new commit message.
@@ -31,7 +31,7 @@ Create a git commit for the current changes. Follow this process:
    If any such files are found, **stop and warn the user**. Do not stage or commit these files unless the user explicitly confirms.
 
 4. **Stage changes** — if nothing is staged, stage all tracked modifications:
-   ```
+   ```bash
    git add -u
    ```
    If there are new untracked files clearly related to the task, stage them too.
@@ -44,11 +44,8 @@ Create a git commit for the current changes. Follow this process:
    - Reference issues/PRs when applicable: `Closes #123`
 
 6. **Commit**:
-   ```
-   git commit -m "$(cat <<'EOF'
-   <message here>
-   EOF
-   )"
+   ```bash
+   git commit -m "<type>(<scope>): <summary>" -m "<body>"
    ```
 
 ## Rules
@@ -61,7 +58,7 @@ Create a git commit for the current changes. Follow this process:
 
 ## Examples of good messages
 
-```
+```text
 feat(auth): add OAuth2 login via Google
 
 fix(api): handle empty response body in /users endpoint
