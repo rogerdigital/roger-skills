@@ -12,146 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate SKILL.md files
-        run: |
-          python3 - <<'EOF'
-          import sys
-          import re
-          from pathlib import Path
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
 
-          errors = []
+      - name: Install validation dependencies
+        run: python -m pip install -r requirements-dev.txt
 
-          # ── Security: dangerous commands in allowed-tools ─────────────────────
-          DANGEROUS_TOOLS = [
-              r"rm\s+-[rf]{1,2}f?",
-              r"git\s+push\s+--force",
-              r"--no-verify",
-              r"curl\b.*\|\s*(?:bash|sh)",
-              r"wget\b.*\|\s*(?:bash|sh)",
-              r"chmod\s+[0-7]*7[0-7]{2}",
-              r"sudo\s+rm",
-              r":\s*\(\)\s*\{.*\}\s*;",   # fork bomb
-              r"mkfs\b",
-              r"dd\s+if=",
-          ]
+      - name: Run validator tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
 
-          # ── Security: malicious intent — action + sensitive target ────────────
-          # Matches when a collection/search verb appears within 120 chars of a
-          # sensitive target (case-insensitive, checked on the full skill body).
-          ACTION = (
-              r"(?:search(?:\s+for)?|find|locate|read|extract|collect|gather|"
-              r"grep|scan|look\s+for|retrieve|fetch|access|dump|list|cat|harvest)"
-          )
-
-          SENSITIVE_TARGETS = [
-              (r"(?:api[\s_-]*key|access[\s_-]*key|secret[\s_-]*key|private[\s_-]*key|"
-               r"auth(?:entication)?[\s_-]*token|bearer[\s_-]*token|\.env\b|"
-               r"credential|password|passwd|passphrase)",
-               "credentials/secrets"),
-
-              (r"(?:personal[\s_-]*info(?:rmation)?|id[\s_-]*card|passport\b|"
-               r"date[\s_-]*of[\s_-]*birth|\bssn\b|social[\s_-]*security|"
-               r"home[\s_-]*address|phone[\s_-]*number|mobile[\s_-]*number)",
-               "personal information"),
-
-              (r"(?:account[\s_-]*number|credit[\s_-]*card|bank[\s_-]*account|"
-               r"billing[\s_-]*info(?:rmation)?|payment[\s_-]*info(?:rmation)?|"
-               r"card[\s_-]*number|cvv\b|routing[\s_-]*number)",
-               "account/financial information"),
-
-              (r"(?:confidential|proprietary|internal[\s_-]*doc(?:ument)?|"
-               r"client[\s_-]*data|employee[\s_-]*record|salary\b|payroll\b|"
-               r"trade[\s_-]*secret|nda\b)",
-               "company/work information"),
-          ]
-
-          # ── Security: exfiltration patterns (action-independent) ─────────────
-          EXFILTRATION = [
-              (r"(?:send|upload|post|transmit|exfiltrate|forward)\s+(?:\w+\s+)*?to\s+https?://",
-               "exfiltration to external URL"),
-              (r"curl\b[^`\n]*-[xX]\s*POST[^`\n]*https?://",
-               "curl POST to external URL"),
-              (r"wget\b[^`\n]*--post[^`\n]*https?://",
-               "wget POST to external URL"),
-          ]
-
-          # ─────────────────────────────────────────────────────────────────────
-
-          skill_files = list(Path("skills").glob("*/SKILL.md"))
-          if not skill_files:
-              print("No SKILL.md files found.")
-              sys.exit(0)
-
-          for path in sorted(skill_files):
-              content = path.read_text(encoding="utf-8")
-
-              # Must start with frontmatter
-              if not content.startswith("---"):
-                  errors.append(f"{path}: missing frontmatter (must start with ---)")
-                  continue
-
-              # Extract frontmatter block
-              match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-              if not match:
-                  errors.append(f"{path}: frontmatter block not closed with ---")
-                  continue
-
-              fm_text = match.group(1)
-
-              # Validate frontmatter is parseable YAML
-              try:
-                  import yaml
-                  fm = yaml.safe_load(fm_text)
-              except Exception as e:
-                  errors.append(f"{path}: invalid YAML in frontmatter — {e}")
-                  continue
-
-              if not isinstance(fm, dict):
-                  errors.append(f"{path}: frontmatter must be a YAML mapping")
-                  continue
-
-              # Required field
-              if not fm.get("description"):
-                  errors.append(f"{path}: missing required field 'description'")
-
-              # Body must exist after frontmatter
-              body = content[match.end():].strip()
-              if not body:
-                  errors.append(f"{path}: skill body is empty")
-                  continue
-
-              # ── Check dangerous commands in allowed-tools field ───────────────
-              allowed_tools = str(fm.get("allowed-tools", ""))
-              for pattern in DANGEROUS_TOOLS:
-                  if re.search(pattern, allowed_tools, re.IGNORECASE):
-                      errors.append(
-                          f"{path}: dangerous command in allowed-tools: "
-                          f"matched pattern '{pattern}'"
-                      )
-
-              # ── Check malicious intent: action + sensitive target ─────────────
-              # Search in the full content (frontmatter description + body)
-              # Skip for skills explicitly marked as security audits
-              if not fm.get("security-audit"):
-                  check_text = content.lower()
-                  for target_pattern, category in SENSITIVE_TARGETS:
-                      combined = rf"{ACTION}.{{0,120}}{target_pattern}"
-                      if re.search(combined, check_text, re.IGNORECASE | re.DOTALL):
-                          errors.append(
-                              f"{path}: suspicious intent — instruction to collect "
-                              f"{category} detected"
-                          )
-
-                  # ── Check exfiltration patterns ───────────────────────────────────
-                  for pattern, label in EXFILTRATION:
-                      if re.search(pattern, check_text, re.IGNORECASE):
-                          errors.append(f"{path}: suspicious intent — {label} detected")
-
-          if errors:
-              print("Validation failed:\n")
-              for e in errors:
-                  print(f"  ✗ {e}")
-              sys.exit(1)
-          else:
-              print(f"✓ All {len(skill_files)} SKILL.md file(s) passed format and security checks.")
-          EOF
+      - name: Validate skills
+        run: python scripts/validate_skills.py
