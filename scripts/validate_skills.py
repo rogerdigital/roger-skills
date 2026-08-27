@@ -16,8 +16,8 @@ DANGEROUS_TOOLS = [
     r"--no-verify",
     r"curl\b.*\|\s*(?:bash|sh)",
     r"wget\b.*\|\s*(?:bash|sh)",
-    r"chmod\s+[0-7]*7\b",
-    r"chmod\b[^\n)]*\bo\+w\b",
+    r"chmod\s+[0-7]*[2367]\b",
+    r"chmod\b[^\n)]*\b(?:o|go|a)\s*(?:\+\s*[rwxXstugo]*w|=\s*[rwxXstugo]*w)",
     r"sudo\s+rm",
     r":\s*\(\)\s*\{.*\}\s*;",
     r"mkfs\b",
@@ -156,6 +156,8 @@ def fenced_blocks(path: str, body: str, body_start_line: int) -> tuple[list[tupl
 
 
 def invalid_bash_pattern(pattern: str) -> str | None:
+    if not pattern:
+        return "Bash permission pattern must not be empty"
     if pattern.startswith("*"):
         return "Bash permission pattern must not begin with '*'"
     if any(character in pattern for character in "?[]"):
@@ -180,14 +182,16 @@ def check_security(path: str, content: str, frontmatter: dict[object, object]) -
     sentences = re.split(r"(?<=[.!?])\s+|\n+", content.lower())
     protective = re.compile(r"\b(?:do not|don't|never|avoid|without)\b")
     for sentence in sentences:
-        if protective.search(sentence):
-            continue
-        for target_pattern, category in SENSITIVE_TARGETS:
-            if re.search(rf"{ACTION}.{{0,120}}{target_pattern}", sentence, re.IGNORECASE):
-                errors.append(f"{path}: suspicious intent — instruction to collect {category} detected")
-        for pattern, label in EXFILTRATION:
-            if re.search(pattern, sentence, re.IGNORECASE):
-                errors.append(f"{path}: suspicious intent — {label} detected")
+        clauses = re.split(r";|,\s*(?=(?:but|however|yet|although)\b)", sentence)
+        for clause in clauses:
+            if protective.search(clause):
+                continue
+            for target_pattern, category in SENSITIVE_TARGETS:
+                if re.search(rf"{ACTION}.{{0,120}}{target_pattern}", clause, re.IGNORECASE):
+                    errors.append(f"{path}: suspicious intent — instruction to collect {category} detected")
+            for pattern, label in EXFILTRATION:
+                if re.search(pattern, clause, re.IGNORECASE):
+                    errors.append(f"{path}: suspicious intent — {label} detected")
     return errors
 
 

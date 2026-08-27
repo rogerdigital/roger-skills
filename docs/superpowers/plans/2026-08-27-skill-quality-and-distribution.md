@@ -355,8 +355,9 @@ a general Markdown or shell parser. The parser must apply these rules:
 
 - A present `allowed-tools` value must be a string. `Bash(...)` permissions are
   literal command prefixes, optionally followed by one final ` *` argument
-  wildcard. Reject leading, embedded, or multiple `*`, plus `?`, `[`, and `]`;
-  compare commands exactly or to the literal prefix followed by a space.
+  wildcard. Reject empty patterns, leading, embedded, or multiple `*`, plus
+  `?`, `[`, and `]`; compare commands exactly or to the literal prefix followed
+  by a space.
 - Validate every command segment in labelled `bash` and `sh` blocks. The fixed
   command-name list is only for identifying executable shell examples in
   unlabelled fences. Shell syntax uses `shlex`; an unterminated quote is a
@@ -366,22 +367,28 @@ a general Markdown or shell parser. The parser must apply these rules:
   least as long. Report unclosed fences and retain original `SKILL.md` line
   numbers in errors. This preserves four-backtick Markdown templates that
   include triple-backtick examples.
-- Restrict sensitive-intent matching to individual sentences and skip clearly
-  protective sentences containing `do not`, `don't`, `never`, `avoid`, or
-  `without`. Continue detecting genuine credential collection and external
-  exfiltration; `security-audit: true` only exempts those content-intent checks.
+- Restrict sensitive-intent matching to conservative clauses: sentence and
+  newline boundaries, semicolons, and comma-led contrast conjunctions. Skip a
+  clause containing `do not`, `don't`, `never`, `avoid`, or `without`, but do
+  not let that protection suppress a later collection or exfiltration clause.
+  `security-audit: true` only exempts those content-intent checks.
+- Treat `chmod` modes with a final numeric digit of `2`, `3`, `6`, or `7` as
+  world-writable, while allowing `755`. Also reject symbolic clauses that grant
+  write access to other or all users, including `o+w`, `go+w`, `a+w`, `o=rw`,
+  and `a=rw`.
 - Read inventory links only from the `## Skills` README section. Require each
   link label to equal its directory, reject duplicates, and compare the linked
   directory set exactly with `skills/*`.
 
-The regression suite contains 31 tests total: the original repository,
+The regression suite contains 34 tests total: the original repository,
 frontmatter, dangerous-tool, pipeline, ignore-marker, inventory, audit, and
 leading-wildcard cases; plus labelled unknown-command coverage; indented,
 tilde, longer-close, and unclosed fences; character-class and question-mark
 permission patterns; invalid shell syntax; protective sensitive text; genuine
 credential collection and exfiltration; real line numbers; safe and unsafe
-`chmod` modes; non-string `allowed-tools`; and duplicate and mismatched README
-entries.
+`chmod` modes (including all listed numeric and symbolic world-writable forms);
+non-string and empty `allowed-tools` Bash patterns; protected-clause bypasses;
+and duplicate and mismatched README entries.
 
 - [ ] **Step 1: Add the validator module and data model**
 
@@ -419,7 +426,8 @@ DANGEROUS_TOOLS = (
     r"--no-verify",
     r"curl\b.*\|\s*(?:bash|sh)",
     r"wget\b.*\|\s*(?:bash|sh)",
-    r"chmod\s+[0-7]*7[0-7]{2}",
+    r"chmod\s+[0-7]*[2367]\b",
+    r"chmod\b[^\n)]*\b(?:o|go|a)\s*(?:\+\s*[rwxXstugo]*w|=\s*[rwxXstugo]*w)",
     r"sudo\s+rm",
     r":\s*\(\)\s*\{.*\}\s*;",
     r"mkfs\b",
@@ -674,7 +682,7 @@ Run:
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Expected: 31 tests pass.
+Expected: 34 tests pass.
 
 - [ ] **Step 6: Run the validator on the real repository**
 
@@ -730,7 +738,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 scripts/validate_skills.py
 ```
 
-Expected: dependency installation succeeds, 31 tests pass, and all 18 skills
+Expected: dependency installation succeeds, 34 tests pass, and all 18 skills
 pass repository validation.
 
 - [ ] **Step 3: Commit the CI entrypoint**
@@ -1114,7 +1122,7 @@ git diff --check main...HEAD
 git status --short --branch
 ```
 
-Expected: 31 tests pass, all 20 skills pass, no whitespace errors, and the
+Expected: 34 tests pass, all 20 skills pass, no whitespace errors, and the
 worktree is clean.
 
 - [ ] **Step 2: Review the commit series**
