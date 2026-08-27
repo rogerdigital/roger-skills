@@ -118,7 +118,7 @@ If a revert produces conflicts:
 If `--no-edit` produced a generic `Revert "..."` message, rewrite it to explain **why**:
 
 ```bash
-git commit -m "revert(<scope>): roll back <description>" -m "Reverting because: <reason>. Original commit: <hash>. Verification: <check>."
+git commit --amend -m "revert(<scope>): roll back <description>" -m "Reverting because: <reason>. Original commit: <hash>. Verification: <check>."
 ```
 
 Rules:
