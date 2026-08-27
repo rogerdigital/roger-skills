@@ -374,8 +374,9 @@ a general Markdown or shell parser. The parser must apply these rules:
   `security-audit: true` only exempts those content-intent checks.
 - Treat `chmod` modes with a final numeric digit of `2`, `3`, `6`, or `7` as
   world-writable, while allowing `755`. Also reject symbolic clauses that grant
-  write access to other or all users, including `o+w`, `go+w`, `a+w`, `o=rw`,
-  and `a=rw`.
+  write access when any valid who-class `[ugoa]+` contains `o` or `a`, including
+  `o+w`, `go+w`, `ugo+w`, `uo+w`, `a+w`, `ugo=rw`, `o=rw`, and `a=rw`; allow
+  owner/group-only clauses such as `u+w` and `ug+w`.
 - Read inventory links only from the `## Skills` README section. Require each
   link label to equal its directory, reject duplicates, and compare the linked
   directory set exactly with `skills/*`.
@@ -386,7 +387,7 @@ leading-wildcard cases; plus labelled unknown-command coverage; indented,
 tilde, longer-close, and unclosed fences; character-class and question-mark
 permission patterns; invalid shell syntax; protective sensitive text; genuine
 credential collection and exfiltration; real line numbers; safe and unsafe
-`chmod` modes (including all listed numeric and symbolic world-writable forms);
+`chmod` modes (including combined who-classes that grant other/all write access);
 non-string and empty `allowed-tools` Bash patterns; protected-clause bypasses;
 and duplicate and mismatched README entries.
 
@@ -427,7 +428,7 @@ DANGEROUS_TOOLS = (
     r"curl\b.*\|\s*(?:bash|sh)",
     r"wget\b.*\|\s*(?:bash|sh)",
     r"chmod\s+[0-7]*[2367]\b",
-    r"chmod\b[^\n)]*\b(?:o|go|a)\s*(?:\+\s*[rwxXstugo]*w|=\s*[rwxXstugo]*w)",
+    r"chmod\b[^\n)]*\b(?=[ugoa]*[oa])[ugoa]+\s*(?:\+\s*[rwxXstugo]*w|=\s*[rwxXstugo]*w)",
     r"sudo\s+rm",
     r":\s*\(\)\s*\{.*\}\s*;",
     r"mkfs\b",

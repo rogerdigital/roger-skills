@@ -17,7 +17,7 @@ DANGEROUS_TOOLS = [
     r"curl\b.*\|\s*(?:bash|sh)",
     r"wget\b.*\|\s*(?:bash|sh)",
     r"chmod\s+[0-7]*[2367]\b",
-    r"chmod\b[^\n)]*\b(?:o|go|a)\s*(?:\+\s*[rwxXstugo]*w|=\s*[rwxXstugo]*w)",
+    r"chmod\b[^\n)]*\b(?=[ugoa]*[oa])[ugoa]+\s*(?:\+\s*[rwxXstugo]*w|=\s*[rwxXstugo]*w)",
     r"sudo\s+rm",
     r":\s*\(\)\s*\{.*\}\s*;",
     r"mkfs\b",

@@ -247,13 +247,20 @@ class ValidateSkillsTest(unittest.TestCase):
                 errors = validate_repository(self.valid_repository(skill))
                 self.assertTrue(any("dangerous command" in error for error in errors))
 
-        for clause in ("o+w", "go+w", "a+w", "o=rw", "a=rw"):
+        for clause in ("o+w", "go+w", "a+w", "o=rw", "a=rw", "ugo+w", "uo+w", "ugo=rw", "o+rwx"):
             with self.subTest(clause=clause):
                 skill = VALID_SKILL.replace(
                     "Bash(git status)", f"Bash(chmod {clause} file)"
                 ).replace("git status\n```", f"chmod {clause} file\n```")
                 errors = validate_repository(self.valid_repository(skill))
                 self.assertTrue(any("dangerous command" in error for error in errors))
+
+        for clause in ("u+w", "ug+w"):
+            with self.subTest(safe_clause=clause):
+                skill = VALID_SKILL.replace(
+                    "Bash(git status)", f"Bash(chmod {clause} file)"
+                ).replace("git status\n```", f"chmod {clause} file\n```")
+                self.assertEqual(validate_repository(self.valid_repository(skill)), [])
 
     def test_rejects_non_string_allowed_tools(self) -> None:
         skill = VALID_SKILL.replace("allowed-tools: Bash(git status)", "allowed-tools:\n  - Bash(git status)")
