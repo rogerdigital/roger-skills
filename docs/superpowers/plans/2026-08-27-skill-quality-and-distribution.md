@@ -360,7 +360,10 @@ a general Markdown or shell parser. The parser must apply these rules:
   by a space.
 - Validate every command segment in labelled `bash` and `sh` blocks. The fixed
   command-name list is only for identifying executable shell examples in
-  unlabelled fences. Shell syntax uses `shlex`; an unterminated quote is a
+  unlabelled fences. Use a small character scanner to split only unquoted,
+  unescaped command connectors (`&&`, `||`, `|`, `|&`, `;`, and background
+  `&`) while preserving original redirection adjacency and stopping at
+  comments. Shell normalization uses `shlex`; an unterminated quote is a
   validation error, never a whitespace-split fallback. For each labelled
   command, parse and normalize first, always inspect dangerous behavior next,
   and only then let a reasoned ignore marker skip permission coverage.
@@ -378,16 +381,18 @@ a general Markdown or shell parser. The parser must apply these rules:
 - Treat `chmod` modes with a final numeric digit of `2`, `3`, `6`, or `7` as
   world-writable, while allowing `755`. Derive the mode from parsed `chmod`
   tokens after skipping common recursive, force, verbosity, and `--` options;
-  do not rely on a raw command regex. Reject symbolic `+`/`=` clauses with `w`
-  when who is omitted or any valid who-class `[ugoa]+` contains `o` or `a`, but
-  allow owner/group-only clauses such as `u+w` and `ug+w`.
+  this includes combined short flags such as `-Rv`; do not rely on a raw
+  command regex. Reject symbolic `+`/`=` clauses with `w` when who is omitted
+  or any valid who-class `[ugoa]+` contains `o` or `a`, but allow owner/group-
+  only clauses such as `u+w` and `ug+w`.
 - Inspect dangerous behavior in normalized body commands as well as declared
   permissions: force pushes include `--force`, `-f`, and later force options;
-  dangerous checks survive wildcard permissions and ignore markers. Treat a
-  standalone `&` as a command separator only when it is not adjacent to a
-  redirection token: retain it when the previous token ends in `>` or `<`, or
-  when the following token begins with `>` or `<` (covering `>&`, `&>`, and
-  `2>&1`).
+  dangerous checks survive wildcard permissions and ignore markers. Unwrap
+  leading environment assignments plus `command` and `env` wrappers before
+  inspection. Detect recursive `rm` from long, short, and combined flags.
+  Treat `&` as a separator only when it is not immediately adjacent to a
+  redirection character; whitespace in `& >` therefore makes it a separator,
+  unlike `>&`, `&>`, `2>&1`, or `<&`.
 - Read inventory links only from the `## Skills` README section. Require each
   link label to equal its directory, reject duplicates, and compare the linked
   directory set exactly with `skills/*`.
@@ -402,7 +407,8 @@ credential collection and exfiltration; real line numbers; safe and unsafe
 other/all write access); non-string and empty `allowed-tools` Bash patterns;
 match-scoped negation and ACTION-boundary cases; dangerous body commands under
 wildcards and ignore markers; standalone background separators and preserved
-redirections; and duplicate and mismatched README entries.
+redirections; quoted/escaped connectors; wrapper force pushes; recursive rm;
+combined chmod flags; and duplicate and mismatched README entries.
 
 - [ ] **Step 1: Add the validator module and data model**
 

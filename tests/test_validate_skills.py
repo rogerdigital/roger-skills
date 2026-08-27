@@ -161,6 +161,10 @@ class ValidateSkillsTest(unittest.TestCase):
             ("Bash(git push *)", "git push -f origin main"),
             ("Bash(git push *)", "git push origin main --force-with-lease"),
             ("Bash(rm *)", "rm -rf /"),
+            ("Bash(rm *)", "rm --recursive --force /tmp/demo"),
+            ("Bash(chmod *)", "chmod -Rv 777 /tmp/demo"),
+            ("Bash(command *)", "command git push --force origin main"),
+            ("Bash(env *)", "env git push --force origin main"),
         ):
             with self.subTest(command=command):
                 skill = VALID_SKILL.replace(
@@ -178,14 +182,32 @@ class ValidateSkillsTest(unittest.TestCase):
         self.assertTrue(any("dangerous command" in error for error in errors))
 
     def test_background_separator_exposes_each_command_to_safety_checks(self) -> None:
-        skill = VALID_SKILL.replace("Bash(git status)", "Bash(git *)").replace(
+        dangerous = VALID_SKILL.replace("Bash(git status)", "Bash(git *)").replace(
             "git status\n```", "git status & rm -rf /\n```"
         )
-        errors = validate_repository(self.valid_repository(skill))
+        errors = validate_repository(self.valid_repository(dangerous))
         self.assertTrue(any("dangerous command" in error for error in errors))
 
+        unknown = VALID_SKILL.replace("Bash(git status)", "Bash(git *)").replace(
+            "git status\n```", "git status & > out unknown-check --safe\n```"
+        )
+        errors = validate_repository(self.valid_repository(unknown))
+        self.assertTrue(any("unknown-check --safe" in error and "not covered" in error for error in errors))
+
+        pipe_stderr = VALID_SKILL.replace("Bash(git status)", "Bash(git *)").replace(
+            "git status\n```", "git status |& unknown-check --safe\n```"
+        )
+        errors = validate_repository(self.valid_repository(pipe_stderr))
+        self.assertTrue(any("unknown-check --safe" in error and "not covered" in error for error in errors))
+
     def test_preserves_redirection_ampersands_within_one_command(self) -> None:
-        for command in ("git status >& out", "git status &> out", "git status 2>&1"):
+        for command in (
+            "git status >& out",
+            "git status &> out",
+            "git status 2>&1",
+            'git status "&& not a connector"',
+            "git status \\&",
+        ):
             with self.subTest(command=command):
                 skill = VALID_SKILL.replace("Bash(git status)", "Bash(git *)").replace(
                     "git status\n```", f"{command}\n```"
@@ -293,7 +315,7 @@ class ValidateSkillsTest(unittest.TestCase):
         self.assertEqual(validate_repository(self.valid_repository(skill)), [])
 
     def test_rejects_world_writable_chmod_modes(self) -> None:
-        for mode in ("777", "666", "776", "762", "733", "-R 777", "--recursive 666"):
+        for mode in ("777", "666", "776", "762", "733", "-R 777", "-Rv 777", "--recursive 666"):
             with self.subTest(mode=mode):
                 skill = VALID_SKILL.replace(
                     "Bash(git status)", f"Bash(chmod {mode} file)"

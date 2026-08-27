@@ -72,6 +72,7 @@ ENV_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 CHMOD_OPTIONS = {
     "-R", "--recursive", "-f", "-v", "-c", "--changes", "--silent", "--quiet", "--verbose",
 }
+COMMAND_OPTIONS = {"-p", "-v", "-V"}
 
 
 def relative_path(root: Path, path: Path) -> str:
@@ -92,24 +93,58 @@ def extract_bash_patterns(value: object) -> list[str]:
 
 
 def split_shell_segments(line: str) -> list[str]:
-    lexer = shlex.shlex(line, posix=True, punctuation_chars="|;&")
-    lexer.whitespace_split = True
-    lexer.commenters = "#"
-    tokens = list(lexer)
-
-    segments: list[list[str]] = [[]]
-    for index, token in enumerate(tokens):
-        previous = tokens[index - 1] if index else ""
-        following = tokens[index + 1] if index + 1 < len(tokens) else ""
-        ampersand_is_redirection = token == "&" and (
-            previous.endswith((">", "<")) or following.startswith((">", "<"))
-        )
-        if token in {"&&", "||", "|", ";"} or (token == "&" and not ampersand_is_redirection):
-            if segments[-1]:
-                segments.append([])
+    segments: list[str] = []
+    start = 0
+    index = 0
+    quote: str | None = None
+    while index < len(line):
+        character = line[index]
+        if quote:
+            if character == "\\" and quote == '"':
+                index += 2
+                continue
+            if character == quote:
+                quote = None
+            index += 1
             continue
-        segments[-1].append(token)
-    return [" ".join(segment) for segment in segments if segment]
+        if character == "\\":
+            index += 2
+            continue
+        if character in {"'", '"'}:
+            quote = character
+            index += 1
+            continue
+        if character == "#":
+            break
+
+        connector_length = 0
+        if character == "&":
+            if index + 1 < len(line) and line[index + 1] == "&":
+                connector_length = 2
+            elif (index > 0 and line[index - 1] in "><") or (
+                index + 1 < len(line) and line[index + 1] in "><"
+            ):
+                index += 1
+                continue
+            else:
+                connector_length = 1
+        elif character == "|":
+            connector_length = 2 if index + 1 < len(line) and line[index + 1] in "|&" else 1
+        elif character == ";":
+            connector_length = 1
+
+        if connector_length:
+            segment = line[start:index].strip()
+            if segment:
+                segments.append(segment)
+            index += connector_length
+            start = index
+            continue
+        index += 1
+    segment = line[start:index].strip()
+    if segment:
+        segments.append(segment)
+    return segments
 
 
 def normalize_shell_command(segment: str) -> str | None:
@@ -182,7 +217,12 @@ def unsafe_chmod_mode(tokens: list[str]) -> str | None:
         if token == "--":
             index += 1
             break
-        if token in CHMOD_OPTIONS:
+        if token in CHMOD_OPTIONS or (
+            token.startswith("-")
+            and not token.startswith("--")
+            and len(token) > 1
+            and set(token[1:]) <= {"R", "f", "v", "c"}
+        ):
             index += 1
             continue
         break
@@ -200,18 +240,56 @@ def unsafe_chmod_mode(tokens: list[str]) -> str | None:
     return None
 
 
+def unwrap_command_tokens(tokens: list[str]) -> list[str]:
+    index = 0
+    while index < len(tokens) and ENV_ASSIGNMENT.match(tokens[index]):
+        index += 1
+    if index < len(tokens) and tokens[index] == "command":
+        index += 1
+        if index < len(tokens) and tokens[index] == "--":
+            index += 1
+        while index < len(tokens) and tokens[index] in COMMAND_OPTIONS:
+            index += 1
+    elif index < len(tokens) and tokens[index] == "env":
+        index += 1
+        while index < len(tokens):
+            token = tokens[index]
+            if token == "--":
+                index += 1
+                break
+            if ENV_ASSIGNMENT.match(token) or token.startswith("-"):
+                index += 1
+                continue
+            break
+    return tokens[index:]
+
+
 def dangerous_command_reason(command: str) -> str | None:
     try:
         tokens = shlex.split(command, posix=True, comments=True)
     except ValueError:
         return None
+    tokens = unwrap_command_tokens(tokens)
     if len(tokens) >= 2 and tokens[:2] == ["git", "push"]:
         if any(option == "-f" or option.startswith("--force") for option in tokens[2:]):
             return "force push"
+    if tokens and tokens[0] == "rm":
+        recursive = any(
+            option == "--recursive"
+            or option in {"-r", "-R"}
+            or (
+                option.startswith("-")
+                and not option.startswith("--")
+                and any(flag in option[1:] for flag in "rR")
+            )
+            for option in tokens[1:]
+        )
+        if recursive:
+            return "recursive rm"
     if tokens and tokens[0] == "chmod":
         return unsafe_chmod_mode(tokens)
     for pattern in DANGEROUS_TOOLS:
-        if re.search(pattern, command, re.IGNORECASE):
+        if re.search(pattern, " ".join(tokens), re.IGNORECASE):
             return f"matched pattern '{pattern}'"
     return None
 
