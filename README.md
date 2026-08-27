@@ -31,6 +31,7 @@ Invoke with a slash command: `/commit`, `/debug my-file.go`, `/pr-review 42`
 | [hotfix](skills/hotfix/SKILL.md) | `/hotfix` | Ship an urgent production fix safely — triage, minimal fix, verify, PR |
 | [revert](skills/revert/SKILL.md) | `/revert [commit]` | Safely revert a commit or range — checks downstream dependencies before acting |
 | [sync-main](skills/sync-main/SKILL.md) | `/sync-main` | Safely fast-forward the primary branch from its remote |
+| [post-merge-cleanup](skills/post-merge-cleanup/SKILL.md) | `/post-merge-cleanup [PR]` | Safely remove merged local and remote branches |
 
 ## Installation
 
@@ -86,7 +87,7 @@ appropriate in the current repository and when user confirmation is required.
 | Read-only | dep-update, migrate, postmortem, pr-review, security-review | Inspect files, repository state, dependencies, or GitHub metadata without writing project or remote state |
 | Local files | adr, changelog, debug, docstring, refactor, release-notes, simplify, spec, test-gen | May edit files in the current worktree and run local checks |
 | Local Git | commit, sync-main | May stage and commit local changes or fast-forward local refs without updating remote refs |
-| Remote Git or GitHub | create-pr, hotfix, revert | May create or update remote Git/GitHub state as defined by the workflow |
+| Remote Git or GitHub | create-pr, hotfix, post-merge-cleanup, revert | May create or update remote Git/GitHub state as defined by the workflow |
 
 ## Contributing
 
