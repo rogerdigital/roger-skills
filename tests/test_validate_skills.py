@@ -200,6 +200,17 @@ class ValidateSkillsTest(unittest.TestCase):
         errors = validate_repository(self.valid_repository(pipe_stderr))
         self.assertTrue(any("unknown-check --safe" in error and "not covered" in error for error in errors))
 
+        commented = VALID_SKILL.replace("Bash(git status)", "Bash(git *)").replace(
+            "git status\n```", "git status # comment ; rm -rf /\n```"
+        )
+        self.assertEqual(validate_repository(self.valid_repository(commented)), [])
+
+        literal_hash = VALID_SKILL.replace(
+            "Bash(git status)", "Bash(echo *) Bash(rm *)"
+        ).replace("git status\n```", "echo foo#bar; rm -rf /\n```")
+        errors = validate_repository(self.valid_repository(literal_hash))
+        self.assertTrue(any("dangerous command" in error for error in errors))
+
     def test_preserves_redirection_ampersands_within_one_command(self) -> None:
         for command in (
             "git status >& out",

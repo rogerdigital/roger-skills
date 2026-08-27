@@ -114,7 +114,9 @@ def split_shell_segments(line: str) -> list[str]:
             quote = character
             index += 1
             continue
-        if character == "#":
+        if character == "#" and (
+            index == 0 or line[index - 1].isspace() or line[index - 1] in "&|;"
+        ):
             break
 
         connector_length = 0
@@ -148,7 +150,7 @@ def split_shell_segments(line: str) -> list[str]:
 
 
 def normalize_shell_command(segment: str) -> str | None:
-    tokens = shlex.split(segment, posix=True, comments=True)
+    tokens = shlex.split(segment, posix=True, comments=False)
     while tokens and ENV_ASSIGNMENT.match(tokens[0]):
         tokens.pop(0)
     if not tokens:
@@ -266,7 +268,7 @@ def unwrap_command_tokens(tokens: list[str]) -> list[str]:
 
 def dangerous_command_reason(command: str) -> str | None:
     try:
-        tokens = shlex.split(command, posix=True, comments=True)
+        tokens = shlex.split(command, posix=True, comments=False)
     except ValueError:
         return None
     tokens = unwrap_command_tokens(tokens)

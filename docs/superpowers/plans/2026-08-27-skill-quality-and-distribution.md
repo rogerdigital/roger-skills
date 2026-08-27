@@ -363,8 +363,11 @@ a general Markdown or shell parser. The parser must apply these rules:
   unlabelled fences. Use a small character scanner to split only unquoted,
   unescaped command connectors (`&&`, `||`, `|`, `|&`, `;`, and background
   `&`) while preserving original redirection adjacency and stopping at
-  comments. Shell normalization uses `shlex`; an unterminated quote is a
-  validation error, never a whitespace-split fallback. For each labelled
+  comments. A `#` starts a comment only at a shell word boundary (line start or
+  after whitespace/control separator); it is literal mid-word. Since the
+  scanner owns comments, later `shlex` tokenization uses `comments=False`.
+  An unterminated quote is a validation error, never a whitespace-split
+  fallback. For each labelled
   command, parse and normalize first, always inspect dangerous behavior next,
   and only then let a reasoned ignore marker skip permission coverage.
 - Parse CommonMark fences with up to three leading spaces, backticks or tildes,
@@ -408,7 +411,8 @@ other/all write access); non-string and empty `allowed-tools` Bash patterns;
 match-scoped negation and ACTION-boundary cases; dangerous body commands under
 wildcards and ignore markers; standalone background separators and preserved
 redirections; quoted/escaped connectors; wrapper force pushes; recursive rm;
-combined chmod flags; and duplicate and mismatched README entries.
+combined chmod flags; shell comment boundaries; and duplicate and mismatched
+README entries.
 
 - [ ] **Step 1: Add the validator module and data model**
 
