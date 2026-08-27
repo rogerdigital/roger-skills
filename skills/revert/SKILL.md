@@ -2,7 +2,7 @@
 name: revert
 description: Safely revert a commit or range of commits — confirms scope, checks for downstream dependencies, performs the revert, and verifies the result. Use when a change broke something and needs to be rolled back cleanly. Triggers on "revert this", "roll back this commit", "undo this change", "revert PR", "undo last commit".
 argument-hint: "[commit hash, PR number, or range A..B]"
-allowed-tools: Bash(git status *) Bash(git log *) Bash(git show *) Bash(git diff *) Bash(git revert *) Bash(git checkout *) Bash(git branch *) Bash(git push *) Bash(git commit *) Bash(gh pr view *) Bash(gh pr create *) Bash(*test*) Bash(*spec*) Bash(npm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *) Read
+allowed-tools: Bash(git status *) Bash(git log *) Bash(git show *) Bash(git diff *) Bash(git revert *) Bash(git checkout *) Bash(git branch *) Bash(git push *) Bash(git commit *) Bash(gh pr view *) Bash(gh pr create *) Bash(npm test *) Bash(yarn test *) Bash(pnpm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *) Bash(python3 -m pytest *) Bash(rspec *) Bash(bundle exec rspec *) Bash(mvn test *) Bash(gradle test *) Read
 ---
 
 Safely revert: `$ARGUMENTS`
@@ -118,7 +118,7 @@ If a revert produces conflicts:
 If `--no-edit` produced a generic `Revert "..."` message, rewrite it to explain **why**:
 
 ```bash
-git commit --amend -m "revert(<scope>): roll back <description>" -m "Reverting because: <reason>. Original commit: <hash>. Verification: <check>."
+git commit --amend -m "revert(<scope>): roll back <description>" -m "Reverting because: <reason>. Original commit: <hash>. Original PR: #<number>. Verification: <check>."
 ```
 
 Rules:

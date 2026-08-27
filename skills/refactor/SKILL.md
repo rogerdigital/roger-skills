@@ -2,7 +2,7 @@
 name: refactor
 description: Refactor a specific file or function for clarity, maintainability, and simplicity — without changing behavior. Triggers on "refactor this", "clean up this code", "simplify this function", "make this more readable".
 argument-hint: "[file path or function name]"
-allowed-tools: Read Edit Write Bash(*test*) Bash(*spec*) Bash(npm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *)
+allowed-tools: Read Edit Write Bash(npm test *) Bash(yarn test *) Bash(pnpm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *) Bash(python3 -m pytest *) Bash(rspec *) Bash(bundle exec rspec *) Bash(mvn test *) Bash(gradle test *)
 ---
 
 Refactor `$ARGUMENTS` to improve code quality without changing external behavior.

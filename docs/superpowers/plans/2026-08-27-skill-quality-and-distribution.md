@@ -62,17 +62,22 @@ create-pr:
   add Bash(git status *)
 
 debug:
-  add Bash(*test*) Bash(*spec*) Bash(make test *) Bash(cargo test *)
-      Bash(go test *) Bash(pytest *) Bash(python -m pytest *)
+  add the explicit shared test set below
+
+Shared test permissions for workflows that run project tests:
+  Bash(npm test *) Bash(yarn test *) Bash(pnpm test *) Bash(make test *)
+  Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *)
+  Bash(python3 -m pytest *) Bash(rspec *) Bash(bundle exec rspec *)
+  Bash(mvn test *) Bash(gradle test *)
 
 dep-update:
   replace broad package-manager permissions with the read-only commands used
   by the workflow: outdated, audit, list, show, and dependencyUpdates
 
 hotfix:
-  add Bash(git fetch *) Bash(git pull *) and the same test permissions used by
-  refactor; remove Bash(gh issue *) because issue creation is not an automatic
-  step of the workflow
+  add Bash(git fetch *) Bash(git pull *) and the explicit shared test set;
+  remove Bash(gh issue *) because issue creation is not an automatic step of
+  the workflow
 
 pr-review:
   replace Bash(gh pr *), Bash(gh pr comment *), and Bash(gh pr review *) with
@@ -82,8 +87,11 @@ release-notes:
   add Bash(git describe *) Bash(git show *) Bash(head *)
 
 revert:
-  add Bash(git commit *) and the same test permissions used by refactor;
+  add Bash(git commit *) and the explicit shared test set;
   replace Bash(gh pr *) with Bash(gh pr view *) Bash(gh pr create *)
+
+simplify, refactor, and test-gen:
+  replace Bash(*test*) and Bash(*spec*) with the explicit shared test set
 
 security-review:
   replace Bash(gh pr *) with Bash(gh pr diff *)
@@ -105,9 +113,13 @@ heredoc commit examples in `commit` and `revert` with commands that stay inside
 the declared Git permission:
 
 ```bash
+git commit -m "<type>(<scope>): <summary>"
 git commit -m "<type>(<scope>): <summary>" -m "<body>"
-git commit --amend -m "revert(<scope>): roll back <description>" -m "Reverting because: <reason>. Original commit: <hash>. Verification: <check>."
+git commit --amend -m "revert(<scope>): roll back <description>" -m "Reverting because: <reason>. Original commit: <hash>. Original PR: #<number>. Verification: <check>."
 ```
+
+The second `-m "<body>"` on the regular commit is optional for non-obvious
+changes.
 
 - [ ] **Step 4: Verify the repaired Markdown manually**
 
@@ -248,6 +260,11 @@ class ValidateRepositoryTests(unittest.TestCase):
         write_skill(self.root, "danger", allowed_tools="Bash(git push --force *)")
         write_readme(self.root, "danger")
         self.assertTrue(any("dangerous command" in error for error in self.errors()))
+
+    def test_rejects_leading_wildcard_permission(self) -> None:
+        write_skill(self.root, "broad", allowed_tools="Bash(*test*) Read")
+        write_readme(self.root, "broad")
+        self.assertTrue(any("leading wildcard" in error for error in self.errors()))
 
     def test_rejects_missing_shell_permission(self) -> None:
         write_skill(self.root, "status", allowed_tools="Read")
@@ -523,6 +540,12 @@ def fenced_blocks(body: str) -> list[tuple[str, str, str | None]]:
 
 def validate_shell_contract(skill: Skill, errors: list[str]) -> None:
     permissions = bash_permissions(skill)
+    for permission in permissions:
+        if permission.startswith("*"):
+            errors.append(
+                f"{skill.path}: leading wildcard permission is not allowed: "
+                f"'{permission}'"
+            )
     for pattern in DANGEROUS_TOOLS:
         if re.search(pattern, " ".join(permissions), re.IGNORECASE):
             errors.append(
@@ -613,7 +636,7 @@ Run:
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Expected: 13 tests pass.
+Expected: 14 tests pass.
 
 - [ ] **Step 6: Run the validator on the real repository**
 
@@ -669,7 +692,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 scripts/validate_skills.py
 ```
 
-Expected: dependency installation succeeds, 13 tests pass, and all 18 skills
+Expected: dependency installation succeeds, 14 tests pass, and all 18 skills
 pass repository validation.
 
 - [ ] **Step 3: Commit the CI entrypoint**
@@ -1053,7 +1076,7 @@ git diff --check main...HEAD
 git status --short --branch
 ```
 
-Expected: 13 tests pass, all 20 skills pass, no whitespace errors, and the
+Expected: 14 tests pass, all 20 skills pass, no whitespace errors, and the
 worktree is clean.
 
 - [ ] **Step 2: Review the commit series**

@@ -2,7 +2,7 @@
 name: debug
 description: Systematically diagnose a bug or failing test. Reads error output, traces the root cause, and proposes a fix. Triggers on "debug this", "why is this failing", "help me debug", "fix this error", "something is broken".
 argument-hint: "[error message, test name, or file path]"
-allowed-tools: Bash(git log *) Bash(git diff *) Bash(*test*) Bash(*spec*) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *) Read Edit Write
+allowed-tools: Bash(git log *) Bash(git diff *) Bash(npm test *) Bash(yarn test *) Bash(pnpm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *) Bash(python3 -m pytest *) Bash(rspec *) Bash(bundle exec rspec *) Bash(mvn test *) Bash(gradle test *) Read Edit Write
 ---
 
 Debug the issue described in `$ARGUMENTS` (or the most recent error/failure if no argument given).

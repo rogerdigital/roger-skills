@@ -2,7 +2,7 @@
 name: simplify
 description: Simplify code by removing unnecessary complexity — dead code, over-abstraction, redundant indirection, and speculative generality. Triggers on "simplify this", "this is overengineered", "too complex", "reduce complexity", "YAGNI".
 argument-hint: "[file path or function name]"
-allowed-tools: Read Edit Write Bash(*test*) Bash(*spec*)
+allowed-tools: Read Edit Write Bash(npm test *) Bash(yarn test *) Bash(pnpm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *) Bash(python3 -m pytest *) Bash(rspec *) Bash(bundle exec rspec *) Bash(mvn test *) Bash(gradle test *)
 ---
 
 Simplify the code in `$ARGUMENTS` by removing unnecessary complexity without changing behavior.

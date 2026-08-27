@@ -45,6 +45,8 @@ Create a git commit for the current changes. Follow this process:
 
 6. **Commit**:
    ```bash
+   git commit -m "<type>(<scope>): <summary>"
+   # For non-obvious changes, the second -m "<body>" is optional:
    git commit -m "<type>(<scope>): <summary>" -m "<body>"
    ```
 

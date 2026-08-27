@@ -2,7 +2,7 @@
 name: test-gen
 description: Generate comprehensive unit tests for a function, class, or module. Covers happy path, edge cases, and error handling. Triggers on "write tests for", "generate tests", "add unit tests", "test this function".
 argument-hint: "[file path or function/class name]"
-allowed-tools: Read Edit Write Bash(*test*) Bash(*spec*) Bash(npm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *)
+allowed-tools: Read Edit Write Bash(npm test *) Bash(yarn test *) Bash(pnpm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *) Bash(python3 -m pytest *) Bash(rspec *) Bash(bundle exec rspec *) Bash(mvn test *) Bash(gradle test *)
 ---
 
 Generate thorough unit tests for: `$ARGUMENTS`

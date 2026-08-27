@@ -2,7 +2,7 @@
 name: hotfix
 description: Ship an urgent production fix safely — triage severity, branch from production, apply the smallest possible fix, verify it, and open a PR for rapid review. Triggers on "hotfix", "urgent fix", "production bug", "ship a hotfix", "emergency fix", "p0 fix".
 argument-hint: "[bug description, failing test, or issue reference]"
-allowed-tools: Bash(git status *) Bash(git branch *) Bash(git checkout *) Bash(git fetch *) Bash(git pull *) Bash(git log *) Bash(git diff *) Bash(git add *) Bash(git commit *) Bash(git push *) Bash(git tag *) Bash(gh pr create *) Bash(*test*) Bash(*spec*) Bash(npm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *) Read Edit Write
+allowed-tools: Bash(git status *) Bash(git branch *) Bash(git checkout *) Bash(git fetch *) Bash(git pull *) Bash(git log *) Bash(git diff *) Bash(git add *) Bash(git commit *) Bash(git push *) Bash(git tag *) Bash(gh pr create *) Bash(npm test *) Bash(yarn test *) Bash(pnpm test *) Bash(make test *) Bash(cargo test *) Bash(go test *) Bash(pytest *) Bash(python -m pytest *) Bash(python3 -m pytest *) Bash(rspec *) Bash(bundle exec rspec *) Bash(mvn test *) Bash(gradle test *) Read Edit Write
 ---
 
 Ship a hotfix for: `$ARGUMENTS`
