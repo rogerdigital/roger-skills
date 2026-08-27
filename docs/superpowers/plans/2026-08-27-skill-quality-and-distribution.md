@@ -93,6 +93,9 @@ revert:
 simplify, refactor, and test-gen:
   replace Bash(*test*) and Bash(*spec*) with the explicit shared test set
 
+migrate:
+  add Bash(grep -i migrat) for the documented migration-file filters
+
 security-review:
   replace Bash(gh pr *) with Bash(gh pr diff *)
 ```

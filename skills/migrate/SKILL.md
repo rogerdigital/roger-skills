@@ -2,7 +2,7 @@
 name: migrate
 description: Audit database migration files for production safety — checks for full-table locks, data-loss risks, missing rollbacks, and zero-downtime violations. Triggers on "review migration", "check migration", "audit migration", "is this migration safe", "migration review".
 argument-hint: "[migration file path, directory, or glob pattern]"
-allowed-tools: Bash(find *) Bash(ls *) Bash(wc *) Bash(git log *) Bash(git diff *) Read
+allowed-tools: Bash(find *) Bash(ls *) Bash(wc *) Bash(git log *) Bash(git diff *) Bash(grep -i migrat) Read
 ---
 
 Audit the database migration(s) in `$ARGUMENTS` for production safety risks.
