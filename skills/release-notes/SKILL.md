@@ -2,7 +2,7 @@
 name: release-notes
 description: Generate user-facing release notes for a new version — translates commits since the last tag into a concise, non-technical summary grouped by audience impact. Triggers on "write release notes", "generate release notes", "draft release", "publish notes", "what to tell users".
 argument-hint: "[version or since-tag, e.g. v1.2.0 or v1.1.0..v1.2.0]"
-allowed-tools: Bash(git log *) Bash(git tag *) Bash(git diff *) Read Write
+allowed-tools: Bash(git log *) Bash(git tag *) Bash(git diff *) Bash(git describe *) Bash(git show *) Bash(head *) Read Write
 ---
 
 Generate user-facing release notes for: `$ARGUMENTS`

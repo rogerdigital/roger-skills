@@ -2,7 +2,7 @@
 name: dep-update
 description: Analyze outdated dependencies and produce a prioritized batch upgrade plan — groups safe updates, isolates risky ones, and includes verification steps. Triggers on "update dependencies", "upgrade deps", "outdated packages", "dependency audit", "update packages".
 argument-hint: "[package manager or directory path]"
-allowed-tools: Bash(npm *) Bash(yarn *) Bash(pnpm *) Bash(pip *) Bash(poetry *) Bash(go *) Bash(cargo *) Bash(composer *) Bash(bundle *) Bash(mvn *) Bash(gradle *) Bash(cat *) Bash(find *) Bash(grep *) Bash(git log *) Read WebFetch
+allowed-tools: Bash(npm outdated *) Bash(npm audit *) Bash(yarn outdated *) Bash(yarn audit *) Bash(pnpm outdated *) Bash(pnpm audit *) Bash(pip list *) Bash(pip-audit *) Bash(poetry show *) Bash(go list *) Bash(cargo outdated *) Bash(cargo audit *) Bash(composer outdated *) Bash(composer audit *) Bash(bundle outdated *) Bash(bundle audit *) Bash(mvn versions:display-dependency-updates *) Bash(gradle dependencyUpdates *) Bash(cat *) Bash(find *) Bash(grep *) Bash(git log *) Read WebFetch
 ---
 
 Analyze outdated dependencies and generate a strategic upgrade plan for `$ARGUMENTS` (or auto-detect from the current project).
@@ -94,7 +94,7 @@ For Tier 4 packages:
 
 Output in this format:
 
-```
+````markdown
 ## Dependency Upgrade Plan
 
 **Project:** <name>
@@ -195,7 +195,7 @@ git checkout -- <lockfile> <manifest>
 | Safe updates | <n> | <time> | This sprint |
 | Major updates | <n> | <time> | Next sprint |
 | Replacements | <n> | <time> | Backlog |
-```
+````
 
 ## Rules
 

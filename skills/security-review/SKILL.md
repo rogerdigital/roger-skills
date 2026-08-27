@@ -2,7 +2,7 @@
 name: security-review
 description: Security audit of code changes — checks for OWASP Top 10 vulnerabilities, dependency risks, secret leaks, and insecure patterns. Triggers on "security review", "check security", "audit security", "find vulnerabilities", "security audit".
 argument-hint: "[file path, directory, or PR number]"
-allowed-tools: Bash(git diff *) Bash(git log *) Bash(gh pr *) Read Grep
+allowed-tools: Bash(git diff *) Bash(git log *) Bash(gh pr diff *) Read Grep
 security-audit: true
 ---
 
@@ -95,7 +95,7 @@ Check for patterns in the diff/files:
 
 ### 6. Output format
 
-```
+```markdown
 ## Security Review Summary
 <overall risk level: Critical / High / Medium / Low / Info>
 <2-3 sentences summarizing findings>

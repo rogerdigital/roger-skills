@@ -48,7 +48,7 @@ Look for:
 
 Trace the causality chain from trigger to impact:
 
-```
+```text
 Triggering event → Propagation mechanism → User-visible impact
 ```
 
@@ -74,7 +74,7 @@ Sources:
 - User-provided context
 
 Format each entry as:
-```
+```text
 HH:MM TZ — <event> — <who/what>
 ```
 
@@ -105,7 +105,7 @@ Each action item must have:
 
 Output in this format:
 
-```
+```markdown
 # Incident Postmortem: <title>
 
 **Date:** <incident date>

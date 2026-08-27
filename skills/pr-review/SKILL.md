@@ -2,7 +2,7 @@
 name: pr-review
 description: Review a pull request thoroughly — code quality, logic, security, test coverage, and style. Triggers on "review PR", "review pull request", "review this PR", "code review", "/pr-review [PR number or URL]".
 argument-hint: "[PR number or URL]"
-allowed-tools: Bash(gh pr *) Bash(git diff *) Bash(git log *) Bash(gh pr comment *) Bash(gh pr review *)
+allowed-tools: Bash(gh pr view *) Bash(gh pr diff *) Bash(gh pr checks *) Bash(git diff *) Bash(git log *)
 ---
 
 Perform a thorough code review of the pull request: `$ARGUMENTS`
@@ -70,7 +70,7 @@ If the diff exceeds 500 lines, adjust the review strategy:
 
 Structure the review as:
 
-```
+```markdown
 ## Summary
 <2-3 sentence overall assessment>
 

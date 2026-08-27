@@ -2,7 +2,7 @@
 name: changelog
 description: Generate a CHANGELOG entry for recent changes since the last release or tag. Groups commits by type, filters noise, and formats as Keep a Changelog markdown. Triggers on "generate changelog", "write changelog", "update CHANGELOG", "what changed since last release".
 argument-hint: "[since-tag or commit range, e.g. v1.2.0 or v1.2.0..HEAD]"
-allowed-tools: Bash(git log *) Bash(git tag *) Bash(git diff *) Read Write Edit
+allowed-tools: Bash(git log *) Bash(git tag *) Bash(git diff *) Bash(git describe *) Read Write Edit
 ---
 
 Generate a CHANGELOG entry for the changes in: `$ARGUMENTS`

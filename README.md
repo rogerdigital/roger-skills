@@ -30,18 +30,77 @@ Invoke with a slash command: `/commit`, `/debug my-file.go`, `/pr-review 42`
 | [release-notes](skills/release-notes/SKILL.md) | `/release-notes [ver]` | Generate user-facing release notes grouped by impact, with breaking-change prominence |
 | [hotfix](skills/hotfix/SKILL.md) | `/hotfix` | Ship an urgent production fix safely — triage, minimal fix, verify, PR |
 | [revert](skills/revert/SKILL.md) | `/revert [commit]` | Safely revert a commit or range — checks downstream dependencies before acting |
+| [sync-main](skills/sync-main/SKILL.md) | `/sync-main` | Safely fast-forward the primary branch from its remote |
+| [post-merge-cleanup](skills/post-merge-cleanup/SKILL.md) | `/post-merge-cleanup [PR]` | Safely remove merged local and remote branches |
 
 ## Installation
 
-Copy the skills you want into your project or home directory:
+Copy only the skills you want to install.
+
+### Claude Code
 
 ```bash
-# Project-level (affects this repo only)
-cp -r skills/commit .claude/skills/
+# Project-level
+mkdir -p .claude/skills
+cp -R skills/commit .claude/skills/commit
 
-# Personal (affects all projects)
-cp -r skills/commit ~/.claude/skills/
+# User-level
+mkdir -p ~/.claude/skills
+cp -R skills/commit ~/.claude/skills/commit
 ```
+
+### Codex
+
+```bash
+# User-level
+mkdir -p ~/.codex/skills
+cp -R skills/commit ~/.codex/skills/commit
+```
+
+For project-level Codex installation, follow the discovery path documented by
+your installed Codex version. This repository does not assume an unverified
+project-level path.
+
+### Update or remove a skill
+
+Run the copy command again to update an installed copy:
+
+```bash
+cp -R skills/commit ~/.codex/skills/commit
+```
+
+Before removal, verify that the target is the exact installed skill directory.
+Then remove that copy:
+
+```bash
+rm -rf ~/.codex/skills/commit
+```
+
+## Permission impact
+
+`allowed-tools` declares the maximum capability a skill may request. The
+workflow rules inside each skill still determine whether an action is
+appropriate in the current repository and when user confirmation is required.
+
+| Level | Skills | Impact |
+|---|---|---|
+| Read-only | dep-update, migrate, postmortem, pr-review, security-review | Inspect files, repository state, dependencies, or GitHub metadata without writing project or remote state |
+| Local files | adr, changelog, debug, docstring, refactor, release-notes, simplify, spec, test-gen | May edit files in the current worktree and run local checks |
+| Local Git | commit, sync-main | May stage and commit local changes or fast-forward local refs without updating remote refs |
+| Remote Git or GitHub | create-pr, hotfix, post-merge-cleanup, revert | May create or update remote Git/GitHub state as defined by the workflow |
+
+## Contributing
+
+Install the validation dependency, run the regression suite, and validate the
+real skill collection before submitting changes:
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+python3 scripts/validate_skills.py
+```
+
+This repository is available under the [MIT License](LICENSE).
 
 ## Design guidelines
 
