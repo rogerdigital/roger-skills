@@ -345,6 +345,41 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'scripts.validate_skil
 - Modify: `tests/test_validate_skills.py`
 - Test: `tests/test_validate_skills.py`
 
+#### Validator contract refinements
+
+Keep the validator focused on executable Skill contracts; do not expand it into
+a general Markdown or shell parser. The parser must apply these rules:
+
+- A present `allowed-tools` value must be a string. `Bash(...)` permissions are
+  literal command prefixes, optionally followed by one final ` *` argument
+  wildcard. Reject leading, embedded, or multiple `*`, plus `?`, `[`, and `]`;
+  compare commands exactly or to the literal prefix followed by a space.
+- Validate every command segment in labelled `bash` and `sh` blocks. The fixed
+  command-name list is only for identifying executable shell examples in
+  unlabelled fences. Shell syntax uses `shlex`; an unterminated quote is a
+  validation error, never a whitespace-split fallback.
+- Parse CommonMark fences with up to three leading spaces, backticks or tildes,
+  an opening length of at least three, and a same-character closing fence at
+  least as long. Report unclosed fences and retain original `SKILL.md` line
+  numbers in errors. This preserves four-backtick Markdown templates that
+  include triple-backtick examples.
+- Restrict sensitive-intent matching to individual sentences and skip clearly
+  protective sentences containing `do not`, `don't`, `never`, `avoid`, or
+  `without`. Continue detecting genuine credential collection and external
+  exfiltration; `security-audit: true` only exempts those content-intent checks.
+- Read inventory links only from the `## Skills` README section. Require each
+  link label to equal its directory, reject duplicates, and compare the linked
+  directory set exactly with `skills/*`.
+
+The regression suite contains 31 tests total: the original repository,
+frontmatter, dangerous-tool, pipeline, ignore-marker, inventory, audit, and
+leading-wildcard cases; plus labelled unknown-command coverage; indented,
+tilde, longer-close, and unclosed fences; character-class and question-mark
+permission patterns; invalid shell syntax; protective sensitive text; genuine
+credential collection and exfiltration; real line numbers; safe and unsafe
+`chmod` modes; non-string `allowed-tools`; and duplicate and mismatched README
+entries.
+
 - [ ] **Step 1: Add the validator module and data model**
 
 Create an empty `scripts/__init__.py`. Start `scripts/validate_skills.py` with:
@@ -636,7 +671,7 @@ Run:
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Expected: 14 tests pass.
+Expected: 31 tests pass.
 
 - [ ] **Step 6: Run the validator on the real repository**
 
@@ -692,7 +727,7 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 scripts/validate_skills.py
 ```
 
-Expected: dependency installation succeeds, 14 tests pass, and all 18 skills
+Expected: dependency installation succeeds, 31 tests pass, and all 18 skills
 pass repository validation.
 
 - [ ] **Step 3: Commit the CI entrypoint**
@@ -1076,7 +1111,7 @@ git diff --check main...HEAD
 git status --short --branch
 ```
 
-Expected: 14 tests pass, all 20 skills pass, no whitespace errors, and the
+Expected: 31 tests pass, all 20 skills pass, no whitespace errors, and the
 worktree is clean.
 
 - [ ] **Step 2: Review the commit series**

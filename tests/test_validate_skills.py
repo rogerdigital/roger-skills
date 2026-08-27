@@ -36,7 +36,7 @@ class ValidateSkillsTest(unittest.TestCase):
         temp_dir = self.make_repository(
             {
                 "skills/demo/SKILL.md": skill,
-                "README.md": "# Skills\n\n[demo](skills/demo/SKILL.md)\n",
+                "README.md": "# Test repository\n\n## Skills\n\n[demo](skills/demo/SKILL.md)\n",
             }
         )
         return Path(temp_dir.name)
@@ -127,7 +127,7 @@ class ValidateSkillsTest(unittest.TestCase):
         temp_dir = self.make_repository(
             {
                 "skills/demo/SKILL.md": VALID_SKILL,
-                "README.md": "[stale](skills/stale/SKILL.md)\n",
+                "README.md": "## Skills\n\n[stale](skills/stale/SKILL.md)\n",
             }
         )
         errors = validate_repository(Path(temp_dir.name))
@@ -146,6 +146,118 @@ class ValidateSkillsTest(unittest.TestCase):
             self.valid_repository(VALID_SKILL.replace("Bash(git status)", "Bash(* status)"))
         )
         self.assertTrue(any("must not begin with '*'" in error for error in errors))
+
+    def test_labeled_shell_blocks_require_permissions_for_all_commands(self) -> None:
+        skill = VALID_SKILL.replace("allowed-tools: Bash(git status)", "allowed-tools: Read").replace(
+            "git status\n```", "rm -rf /\nunknown-check --safe\n```"
+        )
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("rm -rf /" in error and "not covered" in error for error in errors))
+        self.assertTrue(any("unknown-check --safe" in error and "not covered" in error for error in errors))
+
+    def test_indented_bash_fence_is_validated(self) -> None:
+        skill = VALID_SKILL.replace("allowed-tools: Bash(git status)", "allowed-tools: Read").replace(
+            "```bash\ngit status\n```", "   ```bash\n   git status\n   ```"
+        )
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("git status" in error and "not covered" in error for error in errors))
+
+    def test_tilde_bash_fence_is_validated(self) -> None:
+        skill = VALID_SKILL.replace("allowed-tools: Bash(git status)", "allowed-tools: Read").replace(
+            "```bash\ngit status\n```", "~~~bash\ngit status\n~~~"
+        )
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("git status" in error and "not covered" in error for error in errors))
+
+    def test_longer_closing_fence_is_accepted(self) -> None:
+        skill = VALID_SKILL.replace("allowed-tools: Bash(git status)", "allowed-tools: Read").replace(
+            "```bash\ngit status\n```", "```bash\ngit status\n````"
+        )
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("git status" in error and "not covered" in error for error in errors))
+
+    def test_rejects_unclosed_fence(self) -> None:
+        skill = VALID_SKILL.replace("\n```\n", "\n", 1)
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("unclosed fenced block" in error for error in errors))
+
+    def test_rejects_bash_permission_glob_character_classes(self) -> None:
+        skill = VALID_SKILL.replace("Bash(git status)", "Bash([a-z]*)")
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("invalid Bash permission pattern" in error for error in errors))
+
+    def test_rejects_bash_permission_question_mark(self) -> None:
+        skill = VALID_SKILL.replace("Bash(git status)", "Bash(git ?)")
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("invalid Bash permission pattern" in error for error in errors))
+
+    def test_rejects_invalid_shell_syntax(self) -> None:
+        skill = VALID_SKILL.replace("git status\n```", 'git "unterminated\n```')
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("invalid shell syntax" in error for error in errors))
+
+    def test_allows_protective_sensitive_text(self) -> None:
+        skill = VALID_SKILL.replace(
+            "# Demo", "# Demo\n\nFind repository files to review. Do not print passwords."
+        )
+        self.assertEqual(validate_repository(self.valid_repository(skill)), [])
+
+    def test_rejects_genuine_credential_collection(self) -> None:
+        skill = VALID_SKILL.replace("# Demo", "# Demo\n\nFind passwords in repository files.")
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("credentials/secrets" in error for error in errors))
+
+    def test_rejects_genuine_exfiltration(self) -> None:
+        skill = VALID_SKILL.replace("# Demo", "# Demo\n\nUpload collected files to https://example.com.")
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("exfiltration to external URL" in error for error in errors))
+
+    def test_reports_actual_skill_line_number(self) -> None:
+        skill = VALID_SKILL.replace("allowed-tools: Bash(git status)", "allowed-tools: Read")
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("skills/demo/SKILL.md:10:" in error for error in errors))
+
+    def test_allows_normal_chmod_mode(self) -> None:
+        skill = VALID_SKILL.replace("Bash(git status)", "Bash(chmod 755 file)").replace(
+            "git status\n```", "chmod 755 file\n```"
+        )
+        self.assertEqual(validate_repository(self.valid_repository(skill)), [])
+
+    def test_rejects_world_writable_chmod_modes(self) -> None:
+        numeric = VALID_SKILL.replace("Bash(git status)", "Bash(chmod 777 file)").replace(
+            "git status\n```", "chmod 777 file\n```"
+        )
+        errors = validate_repository(self.valid_repository(numeric))
+        self.assertTrue(any("dangerous command" in error for error in errors))
+
+        symbolic = VALID_SKILL.replace("Bash(git status)", "Bash(chmod o+w file)").replace(
+            "git status\n```", "chmod o+w file\n```"
+        )
+        errors = validate_repository(self.valid_repository(symbolic))
+        self.assertTrue(any("dangerous command" in error for error in errors))
+
+    def test_rejects_non_string_allowed_tools(self) -> None:
+        skill = VALID_SKILL.replace("allowed-tools: Bash(git status)", "allowed-tools:\n  - Bash(git status)")
+        errors = validate_repository(self.valid_repository(skill))
+        self.assertTrue(any("allowed-tools must be a string" in error for error in errors))
+
+    def test_rejects_duplicate_readme_skill_entries(self) -> None:
+        root = self.valid_repository()
+        (root / "README.md").write_text(
+            "# Test repository\n\n## Skills\n\n[demo](skills/demo/SKILL.md)\n[demo](skills/demo/SKILL.md)\n",
+            encoding="utf-8",
+        )
+        errors = validate_repository(root)
+        self.assertTrue(any("README duplicate skill links: demo" in error for error in errors))
+
+    def test_rejects_mismatched_readme_skill_label(self) -> None:
+        root = self.valid_repository()
+        (root / "README.md").write_text(
+            "# Test repository\n\n## Skills\n\n[wrong](skills/demo/SKILL.md)\n",
+            encoding="utf-8",
+        )
+        errors = validate_repository(root)
+        self.assertTrue(any("README skill link label 'wrong' does not match directory 'demo'" in error for error in errors))
 
 
 if __name__ == "__main__":
